@@ -5,6 +5,8 @@ import type {
   AgentExchangeMessage,
   AgentProviderRef,
   AgentSessionSettings,
+  ComputerUseActivityState,
+  ComputerUsePreview,
   CreateAgentInput,
   HiddenAgentsSnapshot,
   McpSignInApp,
@@ -267,6 +269,10 @@ export interface MockOpenBotOptions
   snapshots?: Record<string, ConversationSnapshot>;
   /** Deliveries that wait in each agent's queue when the preview starts. */
   queues?: Record<string, QueueDelivery[]>;
+  /** The Computer Use work of the preview's agents when it starts. None by default. */
+  computerUseActivity?: ComputerUseActivityState;
+  /** The picture of the window that the driver works in. None by default. */
+  computerUsePreview?: ComputerUsePreview | null;
   /** The tasks of each agent, keyed by agent id. */
   tasks?: Record<string, AgentTask[]>;
   /** The conversation of each task, keyed by task id. */
@@ -393,6 +399,8 @@ export interface MockOpenBotControls {
   emitInvite: (inviteUrl: string) => void;
   emitHostStatus: (status: HostStatus) => void;
   emitRemoteDesktopSessions: (sessions: RemoteDesktopSession[]) => void;
+  /** Sets the Computer Use work and sends it, as main does when a driver call starts or answers. */
+  emitComputerUseActivity: (state: ComputerUseActivityState) => void;
   dispose: () => void;
 }
 
@@ -749,6 +757,8 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
   const updateListeners = new Set<Listener<UpdateStatus>>();
   const attachmentListeners = new Set<Listener<AttachmentImportEvent>>();
   const latestConversationListeners = new Set<Listener<string>>();
+  let computerUseActivity: ComputerUseActivityState = clone(options.computerUseActivity ?? { sessions: [] });
+  const computerUseActivityListeners = new Set<Listener<ComputerUseActivityState>>();
   const messageSentListeners = new Set<(message: MockSentMessage) => boolean>();
   const promptResponseListeners = new Set<Listener<RespondToPromptInput>>();
   const conversationReads = new Map(Object.entries(clone(options.conversationReads ?? {})));
@@ -1439,6 +1449,16 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
       // The rim is drawn over another application's window, which the preview has none of, so this
       // subscribes to a stream that never carries anything.
       onHighlightPlacement: () => () => undefined,
+      activity: async () => clone(computerUseActivity),
+      onActivityChanged: (listener) => {
+        computerUseActivityListeners.add(listener);
+        return () => computerUseActivityListeners.delete(listener);
+      },
+      // A still picture with a new time, as a window that the driver works in gives one each time.
+      capturePreview: async () => {
+        const preview = options.computerUsePreview;
+        return preview ? { ...preview, capturedAt: new Date().toISOString() } : null;
+      },
     },
     openExternal: async () => undefined,
     // A preview user who has used OpenBot for a while, so the social toast can show.
@@ -3799,6 +3819,10 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
     emitInvite: mockTeam.emitInvite,
     emitHostStatus: mockTeam.emitHostStatus,
     emitRemoteDesktopSessions: mockTeam.emitRemoteDesktopSessions,
+    emitComputerUseActivity: (state) => {
+      computerUseActivity = clone(state);
+      emit(computerUseActivityListeners, clone(state));
+    },
     dispose: () => {
       for (const timer of timers) clearTimeout(timer);
       timers.clear();

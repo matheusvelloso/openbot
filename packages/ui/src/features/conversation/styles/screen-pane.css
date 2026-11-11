@@ -1,0 +1,175 @@
+/* The Screen pane: a live picture of the window that the agent works in with Computer Use. */
+
+.screen-pane {
+  overflow: hidden;
+}
+
+.screen-pane-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--openbot-space-3);
+  overflow-y: auto;
+  padding: var(--openbot-space-3) var(--openbot-space-4) var(--openbot-space-4);
+}
+
+.screen-pane-toolbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--openbot-space-2);
+}
+
+.screen-pane-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+}
+
+.screen-pane-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-text-muted);
+}
+
+.screen-pane-badge[data-live] .screen-pane-dot {
+  background: var(--openbot-success);
+  box-shadow: 0 0 0 3px var(--openbot-success-soft);
+}
+
+.screen-pane-window {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--openbot-space-1-5);
+  margin-inline-start: auto;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+}
+
+.screen-pane-window span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.screen-pane-window svg {
+  width: var(--openbot-icon-xs);
+  height: var(--openbot-icon-xs);
+  flex: 0 0 auto;
+}
+
+.screen-pane-now {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  margin: 0;
+  font-size: var(--openbot-text-md);
+  line-height: var(--openbot-leading-md);
+}
+
+/* A window title can be long: the line keeps two rows and the full title is on the window label. */
+.screen-pane-now > span {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.screen-pane-avatar {
+  width: var(--openbot-icon-md);
+  height: var(--openbot-icon-md);
+  flex: 0 0 auto;
+}
+
+.screen-pane-empty {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+}
+
+/*
+ * The frame keeps the picture's shape. A tall window, such as Calculator, stops at the height limit
+ * and shows whole inside it, so the steps stay in view. The last picture stays, dimmed, when the
+ * agent stops.
+ */
+.screen-pane-frame {
+  position: relative;
+  width: 100%;
+  max-height: min(60vh, 640px);
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+  background: var(--openbot-bg-surface);
+}
+
+.screen-pane-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.5;
+  user-select: none;
+}
+
+.screen-pane-frame[data-live] img {
+  opacity: 1;
+}
+
+.screen-pane-actions {
+  display: flex;
+  gap: var(--openbot-space-2);
+}
+
+.screen-pane-heading {
+  margin: 0;
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-semibold);
+}
+
+.screen-pane-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--openbot-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.screen-pane-step {
+  display: flex;
+  align-items: baseline;
+  gap: var(--openbot-space-2);
+  border-radius: var(--openbot-radius-sm);
+  padding: var(--openbot-space-1) var(--openbot-space-2);
+  color: var(--openbot-text-muted);
+  font-size: var(--openbot-text-sm);
+  line-height: var(--openbot-leading-sm);
+}
+
+.screen-pane-step[data-current] {
+  background: var(--openbot-bg-surface);
+  color: var(--openbot-text-primary);
+}
+
+.screen-pane-step-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.screen-pane-step-failed {
+  color: var(--openbot-danger-text);
+}
+
+.screen-pane-step-time {
+  font-variant-numeric: tabular-nums;
+}

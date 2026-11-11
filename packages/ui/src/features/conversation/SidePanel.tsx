@@ -1,5 +1,6 @@
 import type { AppTextKey } from "@openbot/i18n";
 import {
+  AppWindow,
   AudioLines,
   Button,
   buttonVariants,
@@ -51,6 +52,8 @@ function fileValue(key: string): string {
  */
 const SIDE_PANEL_PANES = {
   browser: { label: "conversation.sidePanel.pane.browser", icon: () => <ComputerIcon /> },
+  // A window, not a screen: the Browser pane already has the computer, and this pane shows one app window.
+  screen: { label: "conversation.sidePanel.pane.screen", icon: () => <AppWindow aria-hidden="true" /> },
   files: { label: "conversation.sidePanel.pane.files", icon: () => <Folder aria-hidden="true" /> },
   settings: { label: "conversation.sidePanel.pane.settings", icon: () => <Settings aria-hidden="true" /> },
   question: {

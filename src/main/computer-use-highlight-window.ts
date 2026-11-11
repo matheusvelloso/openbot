@@ -138,6 +138,14 @@ export class ComputerUseHighlightController<W extends HighlightOverlayWindow = B
     this.#logger = options.logger ?? logger;
   }
 
+  /**
+   * The window that the driver works in now, as the last placement found it, or null. The Screen
+   * pane takes its picture. Like the rim, it names no agent.
+   */
+  get target(): ComputerUseHighlightTarget | null {
+    return this.#target;
+  }
+
   /** Whether the rim is on screen, on any display. For the test and the diagnostic log only. */
   get visible(): boolean {
     for (const overlay of this.#overlays.values()) {

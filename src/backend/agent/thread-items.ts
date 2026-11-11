@@ -501,13 +501,9 @@ export function isToolItem(item: ThreadItem): boolean {
   return /(tool.*call|commandexecution|filechange|websearch|computeraction)/u.test(item.type.toLowerCase());
 }
 
-export function toolProgressText(item: ThreadItem, completed: boolean): string | null {
-  if (!isToolItem(item)) return null;
-  if (completed && getString(item, "status") === "failed") {
-    return sourceText("status.agent.toolStepFailed");
-  }
-
-  const descriptor = [
+/** The words that name a tool item, lower case: its type, name, title, tool and bridged name. */
+function toolDescriptor(item: ThreadItem): string {
+  return [
     item.type,
     getString(item, "name"),
     getString(item, "title"),
@@ -517,10 +513,42 @@ export function toolProgressText(item: ThreadItem, completed: boolean): string |
     .filter(isString)
     .join(" ")
     .toLowerCase();
+}
+
+function isComputerUseTool(item: ThreadItem, descriptor: string): boolean {
+  return (
+    getString(item, "server") === COMPUTER_USE_MCP_SERVER_NAME || descriptor.includes(COMPUTER_USE_MCP_SERVER_NAME)
+  );
+}
+
+/**
+ * The driver tool of a Computer Use step, or null for another item. Codex names the server and the
+ * tool; Claude names `mcp__computer_use__<tool>`. A provider that names neither gives "unknown".
+ */
+export function computerUseToolName(item: ThreadItem): string | null {
+  if (!isToolItem(item)) return null;
+  const descriptor = toolDescriptor(item);
+  if (!isComputerUseTool(item, descriptor)) return null;
+  const tool = getString(item, "tool");
+  if (tool && getString(item, "server") === COMPUTER_USE_MCP_SERVER_NAME) return tool;
+  const prefix = `mcp__${COMPUTER_USE_MCP_SERVER_NAME}__`;
+  for (const name of [getString(item, "name"), getString(item, "title"), tool, bridgedTool(item)?.name]) {
+    if (name?.startsWith(prefix)) return name.slice(prefix.length);
+  }
+  return tool ?? "unknown";
+}
+
+export function toolProgressText(item: ThreadItem, completed: boolean): string | null {
+  if (!isToolItem(item)) return null;
+  if (completed && getString(item, "status") === "failed") {
+    return sourceText("status.agent.toolStepFailed");
+  }
+
+  const descriptor = toolDescriptor(item);
   // Before the generic words below, because a driver tool such as `get_window_state` matches them.
   // The completed text is what the user reads while the model decides the next action, so a long
   // wait after it is the model, not the driver.
-  if (getString(item, "server") === COMPUTER_USE_MCP_SERVER_NAME || descriptor.includes(COMPUTER_USE_MCP_SERVER_NAME)) {
+  if (isComputerUseTool(item, descriptor)) {
     return sourceText(completed ? "status.computerUse.progressDeciding" : "status.computerUse.progressActing");
   }
   // OpenBot's own memory and skill tools, before the generic words too. A memory search reports what

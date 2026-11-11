@@ -577,6 +577,11 @@ export function createRendererForwarders({
     for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.voice.liveEvent, event);
   }
 
+  /** The Computer Use work of this computer's agents, for the Screen pane of each chat window. */
+  function forwardComputerUseActivity(state: import("@openbot/contracts/ipc").ComputerUseActivityState): void {
+    for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.computerUse.activityChanged, state);
+  }
+
   function forwardProviderRuntimeStatus(snapshot: import("@openbot/contracts/ipc").ProviderRuntimeSnapshot): void {
     for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.providerRuntimes.event, snapshot);
   }
@@ -675,6 +680,7 @@ export function createRendererForwarders({
     forwardVoiceModelStatus,
     forwardVoiceStreamTranscript,
     forwardVoiceLiveEvent,
+    forwardComputerUseActivity,
     forwardSpeechModelStatus,
     forwardVoiceServerSettings,
     forwardProviderRuntimeStatus,

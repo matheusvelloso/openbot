@@ -495,6 +495,7 @@ const {
   forwardVoiceModelStatus,
   forwardVoiceStreamTranscript,
   forwardVoiceLiveEvent,
+  forwardComputerUseActivity,
   forwardSpeechModelStatus,
   forwardVoiceServerSettings,
   forwardProviderRuntimeStatus,
@@ -795,6 +796,7 @@ function registerIpcHandlers({
   agentDock,
   cuaDriver,
   computerUsePermissionHelp,
+  computerUsePreview,
   storageUsage,
   machineAlerts,
   trace,
@@ -865,6 +867,8 @@ function registerIpcHandlers({
     ...browserDockIpcHandlers({ browserDock }),
     ...computerUseIpcHandlers({
       cuaDriver,
+      activity: () => service.computerUseActivity(),
+      preview: computerUsePreview,
       openExternal: (url) => shell.openExternal(url),
       permissionHelp: computerUsePermissionHelp,
     }),
@@ -1540,6 +1544,8 @@ if (!hasSingleInstanceLock) {
       service.on("workflowRun", (end) => built.analytics.handleWorkflowRun(end));
       // Codex live voice goes to this computer's windows only, never to Team API clients.
       service.on("liveVoice", forwardVoiceLiveEvent);
+      // Computer Use work is in this computer's windows, so only its windows get it.
+      service.on("computerUse", forwardComputerUseActivity);
       built.browser.onSiteVisited((visit) => built.analytics.handleSiteVisit(visit));
       sidebarLayout.on("changed", (layout) => forwardAgentEvent("local", { type: "sidebar-layout-changed", layout }));
       // A pin from the owner's phone shows at once in the sidebar of this computer.

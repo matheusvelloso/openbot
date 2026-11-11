@@ -47,6 +47,7 @@ import type { AgentMemories } from "./agent-memories";
 import { answerFilePaths } from "./answer-file-paths";
 import type { AttentionBrowserHost, AttentionRegistry } from "./attention-registry";
 import type { BrowserUploadTarget } from "./browser-uploads";
+import type { ComputerUseStepEvent } from "./computer-use-activity";
 import { type ContextCompaction, compactsOnRequest } from "./context-compaction";
 import type { ConversationRuntime } from "./conversation-runtime";
 import type { DeltaBuffer } from "./delta-buffer";
@@ -77,6 +78,7 @@ import {
 } from "./subagent-updates";
 import { shellReadPaths, ThreadFileHistory } from "./thread-file-history";
 import {
+  computerUseToolName,
   isNonActionableCodexWarning,
   isToolItem,
   refusedSessionFailure,
@@ -193,6 +195,10 @@ export interface TurnHooks {
   redactMcp(text: string): string;
   /** A finished tool step, for product analytics only. It never reaches a renderer or a remote client. */
   emitToolUsage(usage: ToolUsageSignal): void;
+  /** A Computer Use driver call of a turn started or answered. Only this computer's windows get it. */
+  computerUseStep?(step: ComputerUseStepEvent): void;
+  /** A turn ended, so its Computer Use session ends too. */
+  computerUseTurnEnded?(threadId: string, turnId: string): void;
   /** The model this turn was started with, or null when the drain no longer knows it. */
   turnModel(agentId: string, turnId: string): string | null;
   /** Whether a provider error moves this agent to a backup model: it switches without asking and has a ready one. */
@@ -578,6 +584,7 @@ export class TurnLifecycle {
         this.#instructions.dropTurn(turn.agentId, turnId);
         // The client is gone, so no browser tool of this turn can run. Other agents keep their controls.
         this.#browser.endControl(this.#conversation.publicThreadId(turn.agentId, turn.threadId), turnId);
+        this.#hooks.computerUseTurnEnded?.(this.#conversation.publicThreadId(turn.agentId, turn.threadId), turnId);
         // The turn does not end here, so a provider error held for a failover shows now.
         const failover = this.#failoverTurns.get(turnId);
         this.#failoverTurns.delete(turnId);
@@ -1403,6 +1410,7 @@ export class TurnLifecycle {
       // channel turn would then end on the agent's own chat, so its task kept running (#6596).
       const publicThreadId = this.#conversation.publicThreadId(agentId, threadId);
       this.#browser.endControl(publicThreadId, turnId);
+      this.#hooks.computerUseTurnEnded?.(publicThreadId, turnId);
       const snapshot = this.#conversation.ensureSnapshot(agentId, threadId);
       // A routine run in its own session ends in the chat's snapshot, where a later turn can still
       // run, such as one the provider started itself. That turn stays active. Cleared, the queue saw an
@@ -2158,6 +2166,18 @@ export class TurnLifecycle {
   ) {
     const usage = completed ? toolUsage(item) : null;
     if (usage) this.#hooks.emitToolUsage({ ...usage, agentId, turnId });
+    const computerUseTool = computerUseToolName(item);
+    if (computerUseTool && isString(item.id)) {
+      this.#hooks.computerUseStep?.({
+        agentId,
+        threadId: this.#conversation.publicThreadId(agentId, threadId),
+        turnId,
+        itemId: item.id,
+        tool: computerUseTool,
+        completed,
+        failed: completed && getString(item, "status") === "failed",
+      });
+    }
     if (yield* this.#images.handleItem(agentId, threadId, turnId, item, completed)) return;
     const toolProgress = toolProgressText(item, completed);
     const openTools = this.#runningTurns.get(turnId)?.openTools;
