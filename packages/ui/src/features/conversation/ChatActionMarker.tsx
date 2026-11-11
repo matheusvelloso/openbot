@@ -14,6 +14,7 @@ import {
   MarkerContent,
   MarkerIcon,
   MessageCircle,
+  MessageSquareText,
   Play,
   Puzzle,
   TriangleAlert,
@@ -61,6 +62,13 @@ interface ChatActionMarkerProps {
   onToggleAgentMessage?: ((messageId: string) => void) | undefined;
   /** Draws the text of an open agent message under its marker, by its `messageId`. */
   agentMessageText?: ((messageId: string) => JSX.Element) | undefined;
+  /**
+   * Opens the own chat of an agent at the row of an agent message. Absent, an agent link opens the
+   * agent's chat at its latest message.
+   */
+  onOpenAgentMessage?: ((agentId: string, rowId: string) => void) | undefined;
+  /** Shows all messages between the chat's agent and another agent. Absent, a marker has no button for them. */
+  onOpenAgentExchange?: ((peerAgentId: string) => void) | undefined;
   /** The instruction file of the agent, for View and Undo on its change line. */
   instructions?: AgentInstructionsFileCalls | undefined;
   /** Opens the Instructions page of the agent. Absent where the chat has no settings page for it. */
@@ -68,7 +76,10 @@ interface ChatActionMarkerProps {
 }
 
 /** The parts of a marker that open the text of an agent message, for the markers in a group. */
-type AgentMessageTextProps = Pick<ChatActionMarkerProps, "onToggleAgentMessage" | "agentMessageText">;
+type AgentMessageTextProps = Pick<
+  ChatActionMarkerProps,
+  "onToggleAgentMessage" | "agentMessageText" | "onOpenAgentMessage" | "onOpenAgentExchange"
+>;
 
 const STATUS_LABELS = {
   queued: "chat.marker.status.queued",
@@ -145,6 +156,8 @@ export function ChatActionMarker(props: ChatActionMarkerProps) {
                       onToggleRoutineRun={props.onToggleRoutineRun}
                       onToggleAgentMessage={props.onToggleAgentMessage}
                       agentMessageText={props.agentMessageText}
+                      onOpenAgentMessage={props.onOpenAgentMessage}
+                      onOpenAgentExchange={props.onOpenAgentExchange}
                       instructions={props.instructions}
                       onOpenInstructions={props.onOpenInstructions}
                     />
@@ -186,6 +199,8 @@ export function ChatActionMarker(props: ChatActionMarkerProps) {
           onSelectAgent={props.onSelectAgent}
           onToggleAgentMessage={props.onToggleAgentMessage}
           agentMessageText={props.agentMessageText}
+          onOpenAgentMessage={props.onOpenAgentMessage}
+          onOpenAgentExchange={props.onOpenAgentExchange}
         />
       )}
     </Show>
@@ -274,6 +289,8 @@ function MarkerGroup(
                         onOpenRoutine={props.onOpenRoutine}
                         onToggleAgentMessage={props.onToggleAgentMessage}
                         agentMessageText={props.agentMessageText}
+                        onOpenAgentMessage={props.onOpenAgentMessage}
+                        onOpenAgentExchange={props.onOpenAgentExchange}
                       />
                     </li>
                   )}
@@ -332,6 +349,8 @@ function AgentMessageGroupMarker(
       onSelectAgent={props.onSelectAgent}
       onToggleAgentMessage={props.onToggleAgentMessage}
       agentMessageText={props.agentMessageText}
+      onOpenAgentMessage={props.onOpenAgentMessage}
+      onOpenAgentExchange={props.onOpenAgentExchange}
       summary={(control) => (
         <>
           <span class="chat-action-marker-label">{label()}</span>
@@ -487,6 +506,13 @@ function SingleChatActionMarker(
     const marker = textMessage();
     return marker?.expanded === true ? marker : undefined;
   };
+  // The other agent of a message between two agents. A message to several agents has no one pair.
+  const exchangePeer = () => {
+    const marker = props.marker;
+    if (marker.kind !== "agent-message") return undefined;
+    if (marker.direction === "incoming") return marker.sourceAgentId;
+    return marker.targetDeliveries.length === 1 ? marker.targetDeliveries[0]?.agentId : undefined;
+  };
   return (
     <Marker
       class={`chat-action-marker chat-action-marker-${props.marker.kind}`}
@@ -498,7 +524,14 @@ function SingleChatActionMarker(
         <MarkerContent class="chat-action-marker-content">
           <span class="chat-action-marker-label">{label()}</span>
           <Show when={props.marker.kind === "agent-message" && props.marker}>
-            {(marker) => <AgentTarget marker={marker()} agents={props.agents} onSelectAgent={props.onSelectAgent} />}
+            {(marker) => (
+              <AgentTarget
+                marker={marker()}
+                agents={props.agents}
+                onSelectAgent={props.onSelectAgent}
+                onOpenAgentMessage={props.onOpenAgentMessage}
+              />
+            )}
           </Show>
           <Show when={props.marker.kind === "routine-lifecycle" && props.marker}>
             {(marker) => (
@@ -592,6 +625,22 @@ function SingleChatActionMarker(
                 agents={props.agents}
                 onToggle={() => props.onToggleAgentMessage?.(marker().messageId)}
               />
+            )}
+          </Show>
+          <Show when={props.onOpenAgentExchange && exchangePeer()}>
+            {(peerAgentId) => (
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                class="chat-action-exchange-button"
+                type="button"
+                aria-label={t("chat.marker.openExchange", { name: agentName(props.agents, peerAgentId(), t) })}
+                title={t("chat.marker.openExchange", { name: agentName(props.agents, peerAgentId(), t) })}
+                data-cuelume-tap="open"
+                onClick={() => props.onOpenAgentExchange?.(peerAgentId())}
+              >
+                <MessageSquareText aria-hidden="true" />
+              </Button>
             )}
           </Show>
           <Show when={!messagesRun() && (routineHistory()?.length ?? 0) > 0}>
@@ -773,12 +822,24 @@ function AgentTarget(props: {
   marker: Extract<ChatActionMarkerModel, { kind: "agent-message" }>;
   agents: AgentProfile[];
   onSelectAgent: (agentId: string, tabId?: string) => void;
+  onOpenAgentMessage?: ((agentId: string, rowId: string) => void) | undefined;
 }) {
   const { t } = useText();
-  // A link opens a conversation of the message, not the thread tab the agent showed last: the side
-  // thread that sent it, or else the agent's own chat.
-  const openSource = (agentId: string) => props.onSelectAgent(agentId, props.marker.senderTaskId ?? MAIN_THREAD_ID);
-  const openRecipient = (agentId: string) => props.onSelectAgent(agentId, MAIN_THREAD_ID);
+  // A link opens the message in a conversation of the other agent, not the thread tab that the agent
+  // showed last: its own chat at the row of the message when the chat can find the row, or else the
+  // side thread of the message, or else the agent's own chat.
+  const openSource = (agentId: string) => {
+    const rowId = props.marker.sourceRowId;
+    if (rowId && props.onOpenAgentMessage) props.onOpenAgentMessage(agentId, rowId);
+    else props.onSelectAgent(agentId, props.marker.senderTaskId ?? MAIN_THREAD_ID);
+  };
+  const openRecipient = (agentId: string) => {
+    const recipientTaskId = props.marker.recipientTaskId;
+    const rowId = props.marker.targetDeliveries.find((delivery) => delivery.agentId === agentId)?.rowId;
+    if (recipientTaskId) props.onSelectAgent(agentId, recipientTaskId);
+    else if (rowId && props.onOpenAgentMessage) props.onOpenAgentMessage(agentId, rowId);
+    else props.onSelectAgent(agentId, MAIN_THREAD_ID);
+  };
   const source = () => props.agents.find((agent) => agent.id === props.marker.sourceAgentId);
   const recipients = () => props.marker.targetDeliveries;
   const singleRecipient = () => {

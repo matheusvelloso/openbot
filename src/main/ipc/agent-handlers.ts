@@ -1,4 +1,5 @@
 import { AGENT_COLORS_CAPABILITY } from "@openbot/contracts/team-protocol/agent-colors-v1";
+import { AGENT_EXCHANGE_CAPABILITY, AGENT_EXCHANGE_ROUTE } from "@openbot/contracts/team-protocol/agent-exchange-v1";
 import {
   AGENT_FAST_MODE_CAPABILITY,
   AGENT_FAST_MODE_ROUTES,
@@ -36,6 +37,8 @@ import {
   CHANNEL_DELETE_CAPABILITY,
   type ClientAgentSummary,
   DEFAULT_PROVIDER_ACCOUNT_ID,
+  decodeAgentExchange,
+  decodeAgentExchangeInput,
   decodeAgentFastModels,
   decodeAgentModelListings,
   decodeAgentProfileDraft,
@@ -1119,6 +1122,20 @@ export function agentIpcHandlers({
         local: (agentId) => service.listQueue(agentId),
         remote: (agentId, serverId) =>
           runCauseEffect(remoteServers.request(serverId, TEAM_API_ROUTES.agent.queue(agentId), decodeQueueSnapshot)),
+      }),
+      // A joined server answers through `agent-exchange-v1`. The client hides the pane on an older host.
+      readAgentExchange: scopedHandler(decodeAgentExchangeInput, {
+        local: (input) => service.readAgentExchange(input),
+        remote: (input, serverId) => {
+          if (!remoteServers.supportsCapability(serverId, AGENT_EXCHANGE_CAPABILITY))
+            throw new Error(sourceText("error.team.agentExchangeUnsupported"));
+          return runCauseEffect(
+            remoteServers.request(serverId, AGENT_EXCHANGE_ROUTE, decodeAgentExchange, {
+              method: "POST",
+              body: { agentId: input.agentId, peerAgentId: input.peerAgentId },
+            }),
+          );
+        },
       }),
       // A joined server has open waits through `agent-waits-v1`. An older host has no route for them, so
       // the composer shows none there and keeps working.

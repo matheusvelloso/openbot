@@ -146,6 +146,7 @@ export const messages = defineMessages("error.team", {
   "error.team.hostedSitesUnregistered": "This server is not registered with OpenBot, so it has no sites.",
   "error.team.hostedSiteNotFound": "Site not found.",
   "error.team.markUnreadUnsupported": "This client does not support marking conversations unread.",
+  "error.team.agentExchangeUnsupported": "This client cannot show the messages between two agents.",
   "error.team.inviteServiceUnavailable": "Invitation service is unavailable.",
   "error.team.logoNotFound": "Server logo not found.",
   "error.team.updateRequired": "Update required.",

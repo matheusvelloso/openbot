@@ -1,4 +1,6 @@
 import type {
+  AgentExchange,
+  AgentExchangeInput,
   AgentNotificationLevelsSnapshot,
   AgentSessionSettings,
   AskSideQuestionInput,
@@ -77,6 +79,11 @@ export interface ConversationRuntime {
     | "onStreamTranscript"
   >;
   openUrl: OpenBotDesktopApi["openUrl"];
+  /**
+   * The messages between two agents of the connected host, for the exchange pane. Absent, the host does
+   * not serve `agent-exchange-v1`.
+   */
+  agentExchange?: ((input: AgentExchangeInput) => Promise<AgentExchange>) | undefined;
   /** Asks the connected host a side question. Absent, the host does not serve `side-question-v1`. */
   askSideQuestion?: ((input: AskSideQuestionInput) => Promise<string>) | undefined;
   /**

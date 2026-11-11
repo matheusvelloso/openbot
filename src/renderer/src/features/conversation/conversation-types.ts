@@ -300,6 +300,11 @@ export interface ConversationProps {
   /** Opens an agent. With `tabId`, the agent opens at that thread tab, not at the tab it showed last. */
   onSelectAgent: (agentId: string, tabId?: string) => void;
   /**
+   * Opens the own chat of an agent at one message, as a search result does. Absent, a link to an agent
+   * message opens the agent's chat at its latest message.
+   */
+  onOpenAgentMessage?: ((agentId: string, messageId: string) => void) | undefined;
+  /**
    * What stops each agent in its own chat: a question, an approval, a browser takeover or a usage
    * limit. The waiting block names it for each agent that this agent asked.
    */

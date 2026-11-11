@@ -140,6 +140,7 @@ export const messages = {
   "error.team.hostedSitesUnregistered": "该服务器未在 OpenBot 注册，因此没有站点。",
   "error.team.hostedSiteNotFound": "未找到该站点。",
   "error.team.markUnreadUnsupported": "当前客户端不支持把对话标为未读。",
+  "error.team.agentExchangeUnsupported": "此客户端无法显示两个助手之间的消息。",
   "error.team.inviteServiceUnavailable": "邀请服务不可用。",
   "error.team.logoNotFound": "未找到服务器标志。",
   "error.team.updateRequired": "需要更新。",

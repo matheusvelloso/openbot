@@ -111,6 +111,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "旁问",
   "conversation.sidePanel.pane.voice": "语音",
   "conversation.sidePanel.pane.subagent": "子助手",
+  "conversation.sidePanel.pane.exchange": "助手间消息",
   "conversation.sideQuestion.emptyTitle": "就这段对话提问",
   "conversation.sideQuestion.emptyBody": "{name} 会读取这段对话来回答，这里的内容不会写回对话。",
   "conversation.sideQuestion.messages": "旁问消息",

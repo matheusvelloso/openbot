@@ -6,6 +6,7 @@ import { ROUTINE_RUN_COMMAND_CAPABILITY } from "@openbot/contracts/team-protocol
 import { classifyFailure } from "@openbot/telemetry";
 import { SETTINGS_PANEL_DEFAULT, SETTINGS_PANEL_MAX } from "@openbot/ui/components/SettingsPanel";
 import { BROWSER_NEW_TAB_URL } from "@openbot/ui/features/browser/browser-suggestions";
+import { AgentExchangePane } from "@openbot/ui/features/conversation/AgentExchangePane";
 import { SidePanelHeader, SidePanelLauncher, type SidePanelPane } from "@openbot/ui/features/conversation/SidePanel";
 import { SideQuestionPanel } from "@openbot/ui/features/conversation/SideQuestionPanel";
 import { SubagentPanel } from "@openbot/ui/features/conversation/Subagents";
@@ -204,6 +205,11 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
     mcpServers,
     voiceConversationAvailable,
     panelSubagentId,
+    panelExchangePeerId,
+    agentExchangeState,
+    reloadAgentExchange,
+    openAgentMessage,
+    agentMessageLinks,
     shownPanelThreadId,
     openPanelThread,
     closePanelThread,
@@ -644,6 +650,22 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
       {/* Keyed, so each side thread gets its own messages and read state. */}
       <Show when={shownThread()} keyed>
         {(threadId) => <ConversationSideThread threadId={threadId} />}
+      </Show>
+
+      <Show when={activeRightPanel() === "exchange" && props.agent && panelExchangePeerId()}>
+        {(peerAgentId) => (
+          <AgentExchangePane
+            agentId={props.agent?.id ?? ""}
+            peerAgentId={peerAgentId()}
+            agents={props.agents}
+            state={agentExchangeState()}
+            onOpenMessage={agentMessageLinks() ? openAgentMessage : undefined}
+            onSelectAgent={(agentId) => props.onSelectAgent(agentId)}
+            onOpenLink={(url) => void openExternalMessageUrl(url)}
+            onRetry={reloadAgentExchange}
+            onClosePanel={() => closeSidePanelPane("exchange")}
+          />
+        )}
       </Show>
 
       <Show when={activeRightPanel() === "subagent"}>

@@ -1,15 +1,18 @@
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import {
   type AgentEvent,
+  type AgentExchangeInput,
   type AskSideQuestionInput,
   type AttachmentImportEvent,
   type AttachmentSummary,
+  decodeAgentExchange,
   decodeSaveSkillSuggestionResult,
   type SaveSkillSuggestionInput,
   STORAGE_CAPABILITY,
   type TeamRealtimeEvent,
   type TestRoutineInput,
 } from "@openbot/contracts/ipc";
+import { AGENT_EXCHANGE_CAPABILITY, AGENT_EXCHANGE_ROUTE } from "@openbot/contracts/team-protocol/agent-exchange-v1";
 import { AGENT_FOLDERS_CAPABILITY } from "@openbot/contracts/team-protocol/agent-folders-v1";
 import { AGENT_INSTRUCTIONS_CAPABILITY } from "@openbot/contracts/team-protocol/agent-instructions-v1";
 import { AGENT_MEMORY_LIMIT_CAPABILITY } from "@openbot/contracts/team-protocol/agent-memory-limit-v1";
@@ -430,6 +433,15 @@ export function createWebConversationRuntime(
           agentId: input.agentId,
           question: input.question,
           earlier: input.earlier.map(({ question, answer }) => ({ question, answer })),
+        });
+    },
+    // Any member who can view the agent reads the messages between it and another agent.
+    get agentExchange() {
+      if (!adminRequest || hasCapability?.(AGENT_EXCHANGE_CAPABILITY) !== true) return undefined;
+      return async (input: AgentExchangeInput) =>
+        adminRequest()("POST", AGENT_EXCHANGE_ROUTE, decodeAgentExchange, {
+          agentId: input.agentId,
+          peerAgentId: input.peerAgentId,
         });
     },
     // A member who can chat with the agent can press Save; the host checks the level.

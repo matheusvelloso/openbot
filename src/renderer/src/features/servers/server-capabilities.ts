@@ -141,7 +141,8 @@ export function serverSupportsCapability(
       capability === "claude-compact-window-v1" ||
       capability === "agent-usage-limit-v1" ||
       capability === "hermes-import-v1" ||
-      capability === "provider-detection-v1") &&
+      capability === "provider-detection-v1" ||
+      capability === "agent-exchange-v1") &&
     server?.kind === "remote"
   ) {
     return server.compatibility?.capabilities.includes(capability) === true;

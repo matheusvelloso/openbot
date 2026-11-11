@@ -7,6 +7,7 @@ import {
   Folder,
   Maximize2,
   MessageCircleQuestionMark,
+  MessageSquareText,
   Minimize2,
   PanelRight,
   Plus,
@@ -58,11 +59,16 @@ const SIDE_PANEL_PANES = {
   },
   voice: { label: "conversation.sidePanel.pane.voice", icon: () => <AudioLines aria-hidden="true" /> },
   subagent: { label: "conversation.sidePanel.pane.subagent", icon: () => <Workflow aria-hidden="true" /> },
+  exchange: {
+    label: "conversation.sidePanel.pane.exchange",
+    icon: () => <MessageSquareText aria-hidden="true" />,
+  },
 } as const satisfies Record<string, { label: AppTextKey; icon: () => JSX.Element }>;
 
 /**
- * A pane of the side panel. A side question opens from the composer only, and a subagent from its
- * row in the chat, so the launcher and Add do not list them.
+ * A pane of the side panel. A side question opens from the composer only, a subagent from its row in
+ * the chat, and the messages between two agents from a message marker, so the launcher and Add do
+ * not list them.
  */
 export type SidePanelPane = keyof typeof SIDE_PANEL_PANES;
 

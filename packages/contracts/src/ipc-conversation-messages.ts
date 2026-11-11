@@ -156,10 +156,16 @@ export interface AgentExchangeSummary {
   /** Absent means the sender waits for an answer. See `QueueDelivery.expectsReply`. */
   expectsReply?: boolean;
   /**
-   * The sender's side thread that sent an incoming message. The sender link opens it. The Team API
+   * The sender's side thread that sent the message. On an incoming message the sender link opens
+   * it; an outgoing message from a side thread also shows in the sender's own chat. The Team API
    * does not carry it, so a joined client opens the sender's own chat.
    */
   senderTaskId?: string;
+  /**
+   * The recipient's side thread that an outgoing message runs in, such as an answer to a request from
+   * that thread. The Team API does not carry it, so a joined client opens the recipient's own chat.
+   */
+  recipientTaskId?: string;
 }
 
 function isAgentExchangeSummary(value: unknown): value is AgentExchangeSummary {
@@ -185,7 +191,8 @@ function isAgentExchangeSummary(value: unknown): value is AgentExchangeSummary {
         (delivery.error === null || isBoundedString(delivery.error, INPUT_LIMITS.messageText)),
     ) &&
     (value.expectsReply === undefined || isBoolean(value.expectsReply)) &&
-    (value.senderTaskId === undefined || isIdentifier(value.senderTaskId))
+    (value.senderTaskId === undefined || isIdentifier(value.senderTaskId)) &&
+    (value.recipientTaskId === undefined || isIdentifier(value.recipientTaskId))
   );
 }
 

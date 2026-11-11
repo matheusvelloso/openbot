@@ -141,6 +141,7 @@ export const messages = {
   "error.team.hostedSitesUnregistered": "Bu sunucu OpenBot'a kayıtlı değil, bu nedenle sitesi yok.",
   "error.team.hostedSiteNotFound": "Site bulunamadı.",
   "error.team.markUnreadUnsupported": "Bu istemci konuşmaları okunmadı olarak işaretlemeyi desteklemiyor.",
+  "error.team.agentExchangeUnsupported": "Bu istemci iki ajan arasındaki mesajları gösteremez.",
   "error.team.inviteServiceUnavailable": "Davet hizmeti kullanılamıyor.",
   "error.team.logoNotFound": "Sunucu logosu bulunamadı.",
   "error.team.updateRequired": "Güncelleme gerekli.",

@@ -163,6 +163,7 @@ type TeamApiAgentMethods = Pick<
   | "listWorkspaceDirectory"
   | "sendMessage"
   | "listQueue"
+  | "readAgentExchange"
   | "acknowledgeFailedTurn"
   | "setMessageReaction"
   | "deleteConversationMessage"

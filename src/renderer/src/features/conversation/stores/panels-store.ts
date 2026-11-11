@@ -67,10 +67,14 @@ export interface SidePanelState {
  */
 type FileTabPlace = "tab" | "here" | "open";
 
-/** The side panel of each agent, the subagent in its Subagent pane, and the side thread that it shows. */
+/**
+ * The side panel of each agent, the subagent in its Subagent pane, the other agent in its exchange
+ * pane, and the side thread that it shows.
+ */
 export interface SidePanelsState {
   side: Record<string, SidePanelState>;
   subagents: Record<string, string>;
+  exchanges: Record<string, string>;
   threads: Record<string, string>;
 }
 
@@ -202,6 +206,11 @@ export function createPanelsStore(deps: PanelsStoreDeps) {
     const agentId = conversationOwnerId(deps.props);
     return agentId ? (panels.subagents[agentId] ?? null) : null;
   };
+  /** The other agent of the exchange pane, while it shows or when it showed last. */
+  const panelExchangePeerId = (): string | null => {
+    const agentId = conversationOwnerId(deps.props);
+    return agentId ? (panels.exchanges[agentId] ?? null) : null;
+  };
   /** The side thread of the side panel, while it shows or when it showed last. It can be gone. */
   const panelThreadId = (): string | null => {
     const agentId = conversationOwnerId(deps.props);
@@ -243,6 +252,16 @@ export function createPanelsStore(deps: PanelsStoreDeps) {
       draft.subagents[agentId] = subagentId;
     });
     setActiveRightPanel("subagent", agentId);
+  }
+
+  /** Shows all messages between the agent of this chat and another agent in the side panel. */
+  function openExchangePanel(peerAgentId: string): void {
+    const agentId = conversationOwnerId(deps.props);
+    if (!agentId) return;
+    setPanels((draft) => {
+      draft.exchanges[agentId] = peerAgentId;
+    });
+    setActiveRightPanel("exchange", agentId);
   }
 
   /** Shows a side thread in the side panel. */
@@ -716,6 +735,8 @@ export function createPanelsStore(deps: PanelsStoreDeps) {
     filesOpen,
     panelSubagentId,
     openSubagentPanel,
+    panelExchangePeerId,
+    openExchangePanel,
     panelThreadId,
     openPanelThread,
     sidePanel,

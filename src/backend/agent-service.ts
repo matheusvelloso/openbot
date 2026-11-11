@@ -10,6 +10,8 @@ import type {
   AgentAccessLevel,
   AgentAnalyticsInput,
   AgentEvent,
+  AgentExchange,
+  AgentExchangeInput,
   AgentMemory,
   AgentMemorySelectionState,
   AgentModelId,
@@ -5149,6 +5151,25 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   listQueue(agentId: string): QueueSnapshot {
     return this.#mailboxSync.queueSnapshot(agentId);
+  }
+
+  /**
+   * The messages between the agent and another agent, for the exchange pane of the agent's chat. A
+   * message that a person deleted from the agent's own chat stays out.
+   */
+  readAgentExchange(input: AgentExchangeInput): AgentExchange {
+    const agents = this.listAgents();
+    const agent = agents.find((candidate) => candidate.id === input.agentId);
+    if (
+      !agent ||
+      input.peerAgentId === input.agentId ||
+      !agents.some((candidate) => candidate.id === input.peerAgentId)
+    )
+      throw new Error(sourceText("error.team.agentNotFound"));
+    const deleted = agent.threadId
+      ? this.#store.database.deletedConversationMessageIds(agent.threadId)
+      : new Set<string>();
+    return this.#mailbox.agentExchange(input.agentId, input.peerAgentId, deleted);
   }
 
   listWaits(agentId: string): AgentWaitsSnapshot {

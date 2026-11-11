@@ -44,6 +44,7 @@ import {
   type AgentSummary,
   type AgentTask,
   type AttachmentDataInput,
+  agentOutboxRowId,
   type BitwardenConnectorStatus,
   type CentralAuthUser,
   CHANNEL_CHATS_CAPABILITY,
@@ -54,6 +55,7 @@ import {
   type CustomProviderResult,
   type CustomProviderSummary,
   DEFAULT_AGENT_DEFAULTS,
+  decodeAgentExchange,
   decodeHostPasswordManagerList,
   decodeHostPasswordManagerStatus,
   decodeHostProviderAccountModels,
@@ -86,6 +88,7 @@ import {
   AGENT_BACKUP_MODELS_ROUTES,
 } from "@openbot/contracts/team-protocol/agent-backup-models-v1";
 import { AGENT_COLORS_CAPABILITY, AGENT_COLORS_ROUTES } from "@openbot/contracts/team-protocol/agent-colors-v1";
+import { AGENT_EXCHANGE_CAPABILITY, AGENT_EXCHANGE_ROUTE } from "@openbot/contracts/team-protocol/agent-exchange-v1";
 import {
   AGENT_FAST_MODE_CAPABILITY,
   AGENT_FAST_MODE_ROUTES,
@@ -842,6 +845,43 @@ const fakeAgents: TeamApiAgents = {
     throw new Error(`The status backend failed with ${FAKE_SECRET}.`);
   },
   listAgents: () => agents,
+  readAgentExchange: (input) => {
+    record("readAgentExchange", input.agentId, input.peerAgentId);
+    return {
+      agentId: input.agentId,
+      peerAgentId: input.peerAgentId,
+      messages: [
+        {
+          messageId: "message-exchange-ask",
+          senderAgentId: input.agentId,
+          recipientAgentId: input.peerAgentId,
+          text: "Can you check the build?",
+          textTruncated: false,
+          createdAt: "2026-11-05T07:00:00.000Z",
+          replyToMessageId: null,
+          expectsReply: true,
+          status: "completed",
+          senderRowId: agentOutboxRowId("message-exchange-ask"),
+          recipientRowId: "delivery-exchange-ask",
+        },
+        {
+          messageId: "message-exchange-answer",
+          senderAgentId: input.peerAgentId,
+          recipientAgentId: input.agentId,
+          text: "The build is green.",
+          textTruncated: false,
+          createdAt: "2026-11-05T07:01:00.000Z",
+          replyToMessageId: "message-exchange-ask",
+          expectsReply: false,
+          status: "running",
+          senderRowId: agentOutboxRowId("message-exchange-answer"),
+          // The answer ran in a side thread of the first agent.
+          recipientRowId: null,
+        },
+      ],
+      truncated: false,
+    };
+  },
   listWaits: (agentId) => {
     record("listWaits", agentId);
     return {
@@ -9252,6 +9292,73 @@ try {
         discarded.status === 200 &&
         errorIs(applyClosed, 409, sourceText("error.import.exportClosed")),
       [summary(again), summary(discarded), summary(applyClosed)],
+    );
+  }
+
+  // ---- Messages between two agents (agent-exchange-v1) ----
+  {
+    const capabilities = [AGENT_EXCHANGE_CAPABILITY];
+    const v9 = { capabilities, protocol: TEAM_PROTOCOL_V9 };
+    const compatibility = await call("GET", TEAM_API_ROUTES.compatibility, { protocol: TEAM_PROTOCOL_V9 });
+    const older = await call("GET", TEAM_API_ROUTES.compatibility, { protocol: 8 });
+    check(
+      "the host advertises agent-exchange-v1 to a protocol 9 peer only",
+      list(field(compatibility.body, "capabilities")).includes(AGENT_EXCHANGE_CAPABILITY) &&
+        !list(field(older.body, "capabilities")).includes(AGENT_EXCHANGE_CAPABILITY),
+      [summary(compatibility), summary(older)],
+    );
+    const unsupported = await call("POST", AGENT_EXCHANGE_ROUTE, {
+      token: bobToken,
+      json: { agentId: "agent-ada", peerAgentId: "agent-oc" },
+    });
+    const hiddenPeer = await call("POST", AGENT_EXCHANGE_ROUTE, {
+      token: bobToken,
+      capabilities,
+      protocol: 6,
+      json: { agentId: "agent-ada", peerAgentId: "agent-pi" },
+    });
+    const missingAgent = await call("POST", AGENT_EXCHANGE_ROUTE, {
+      token: bobToken,
+      ...v9,
+      json: { agentId: "agent-gone", peerAgentId: "agent-oc" },
+    });
+    const samePair = await call("POST", AGENT_EXCHANGE_ROUTE, {
+      token: bobToken,
+      ...v9,
+      json: { agentId: "agent-ada", peerAgentId: "agent-ada" },
+    });
+    check(
+      "the exchange without the capability, with a hidden or missing agent, or of an agent with itself is refused",
+      errorIs(unsupported, 400, sourceText("error.team.agentExchangeUnsupported")) &&
+        errorIs(hiddenPeer, 404, sourceText("error.team.agentNotFound")) &&
+        errorIs(missingAgent, 404, sourceText("error.team.agentNotFound")) &&
+        errorIs(samePair, 404, sourceText("error.team.agentNotFound")) &&
+        callsOf("readAgentExchange").length === 0,
+      [summary(unsupported), summary(hiddenPeer), summary(missingAgent), summary(samePair)],
+    );
+    const read = await call("POST", AGENT_EXCHANGE_ROUTE, {
+      token: bobToken,
+      ...v9,
+      json: { agentId: "agent-ada", peerAgentId: "agent-oc" },
+    });
+    const messages = list(field(read.body, "messages"));
+    let decoded = false;
+    try {
+      decoded = decodeAgentExchange(read.body).messages.length === 2;
+    } catch {
+      decoded = false;
+    }
+    check(
+      "a member who can view an agent reads its messages with another agent, and the client decoder takes the answer",
+      read.status === 200 &&
+        decoded &&
+        field(read.body, "agentId") === "agent-ada" &&
+        field(read.body, "peerAgentId") === "agent-oc" &&
+        messages.length === 2 &&
+        field(messages[0], "senderRowId") === agentOutboxRowId("message-exchange-ask") &&
+        field(messages[1], "recipientRowId") === null &&
+        isDeepStrictEqual(callsOf("readAgentExchange"), [["agent-ada", "agent-oc"]]),
+      summary(read),
     );
   }
 

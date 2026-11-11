@@ -12,6 +12,7 @@ export * from "./ipc-agent-analytics";
 export * from "./ipc-agent-colors";
 export * from "./ipc-agent-dock";
 export * from "./ipc-agent-events";
+export * from "./ipc-agent-exchange";
 export * from "./ipc-agent-folders";
 export * from "./ipc-agent-identity";
 export * from "./ipc-agent-import";

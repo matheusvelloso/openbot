@@ -115,6 +115,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "Yan soru",
   "conversation.sidePanel.pane.voice": "Ses",
   "conversation.sidePanel.pane.subagent": "Alt ajan",
+  "conversation.sidePanel.pane.exchange": "Ajan mesajları",
   "conversation.sideQuestion.emptyTitle": "Bu sohbet hakkında sor",
   "conversation.sideQuestion.emptyBody":
     "{name} yanıt vermek için bu sohbeti okur. Buradaki hiçbir şey sohbete eklenmez.",

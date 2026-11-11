@@ -113,6 +113,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "곁다리 질문",
   "conversation.sidePanel.pane.voice": "음성",
   "conversation.sidePanel.pane.subagent": "하위 에이전트",
+  "conversation.sidePanel.pane.exchange": "에이전트 메시지",
   "conversation.sideQuestion.emptyTitle": "이 채팅에 대해 물어보세요",
   "conversation.sideQuestion.emptyBody":
     "{name}이(가) 이 채팅을 읽고 답해요. 여기서 나눈 내용은 채팅에 반영되지 않아요.",
