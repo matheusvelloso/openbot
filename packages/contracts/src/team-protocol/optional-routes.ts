@@ -7,6 +7,7 @@ import { AGENT_ACCESS_CODECS } from "./agent-access-v1";
 import { AGENT_ADMIN_CODECS } from "./agent-admin-v1";
 import { AGENT_BACKUP_MODELS_CODECS } from "./agent-backup-models-v1";
 import { AGENT_COLORS_CODECS } from "./agent-colors-v1";
+import { AGENT_EXCHANGE_CODECS } from "./agent-exchange-v1";
 import { AGENT_FAST_MODE_CODECS } from "./agent-fast-mode-v1";
 import { AGENT_FOLDERS_CODECS } from "./agent-folders-v1";
 import { AGENT_HIDDEN_CODECS } from "./agent-hidden-v1";
@@ -202,6 +203,7 @@ const CODECS: ReadonlyMap<string, OptionalRouteCodec> = new Map([
   ...CLAUDE_USER_SETUP_CODECS,
   ...CLAUDE_COMPACT_WINDOW_CODECS,
   ...PROVIDER_ACCOUNT_MODELS_CODECS,
+  ...AGENT_EXCHANGE_CODECS,
   ...AGENT_THREAD_QUEUE_CODECS,
   ...AGENT_USAGE_LIMIT_CODECS,
   ...HERMES_IMPORT_CODECS,

@@ -114,6 +114,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "Zijvraag",
   "conversation.sidePanel.pane.voice": "Spraak",
   "conversation.sidePanel.pane.subagent": "Subagent",
+  "conversation.sidePanel.pane.exchange": "Agentberichten",
   "conversation.sideQuestion.emptyTitle": "Vraag iets over deze chat",
   "conversation.sideQuestion.emptyBody":
     "{name} leest deze chat om te antwoorden. Niets hiervan gaat terug naar de chat.",

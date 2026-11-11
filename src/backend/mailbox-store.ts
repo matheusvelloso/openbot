@@ -5,6 +5,8 @@ import { playableMediaKind } from "@openbot/contracts/attachment-files";
 import { rewriteAttachmentReferences } from "@openbot/contracts/attachment-references";
 import { INPUT_LIMITS } from "@openbot/contracts/input-limits";
 import type {
+  AgentExchange,
+  AgentExchangeMessage,
   AgentRuntimeWorkItem,
   AttachmentDataInput,
   AttachmentSummary,
@@ -23,10 +25,13 @@ import type {
 } from "@openbot/contracts/ipc";
 import {
   AGENT_EXCHANGE_ITEM_TYPE,
+  AGENT_EXCHANGE_MESSAGE_LIMIT,
+  AGENT_EXCHANGE_TEXT_LIMIT,
   AGENT_RUNTIME_ATTENTION_LIMIT,
   AGENT_RUNTIME_TEXT_LIMIT,
   AGENT_RUNTIME_WORKING_ITEMS_LIMIT,
   AGENT_WELCOME_ITEM_TYPE,
+  agentOutboxRowId,
   isConversationMessageSender,
   isMessageReaction,
   QUEUE_STEER_FALLBACKS,
@@ -1456,9 +1461,10 @@ export class MailboxStore {
         (!ownMessage || !deliveriesByMessage.get(message.id)?.some((delivery) => delivery.recipientAgentId !== agentId))
       )
         continue;
-      // A request the agent sent from a Slack thread or a side thread belongs to that thread, not to
-      // its own chat. The teammate it went to still sees it.
-      if ((message.messagingReturn || message.senderTaskId) && ownMessage) continue;
+      // A request the agent sent from a Slack thread belongs to that thread, not to its own chat. The
+      // teammate it went to still sees it. A request from a side thread shows in the agent's own chat
+      // too, so the chat keeps a record of every message that the agent sent to a teammate.
+      if (message.messagingReturn && ownMessage) continue;
       const deliveries = deliveriesByMessage.get(message.id) ?? [];
       let relevant = ownMessage;
       let active = false;
@@ -1484,8 +1490,9 @@ export class MailboxStore {
       const deliveries = deliveriesByMessage.get(message.id) ?? [];
       if (message.sender.kind === "agent" && message.sender.agentId === agentId) {
         messages.push({
-          id: `outbox-${message.id}`,
-          turnId: turnIds.get(message.id),
+          id: agentOutboxRowId(message.id),
+          // A side thread's turn is not in the agent's own chat, so the row stands alone there.
+          turnId: message.senderTaskId ? undefined : turnIds.get(message.id),
           author: "system",
           source: "system",
           text: message.text,
@@ -1498,6 +1505,8 @@ export class MailboxStore {
             recipientAgentIds: deliveries.map((item) => item.recipientAgentId),
             replyToMessageId: message.replyToMessageId,
             ...(message.expectsReply === false ? { expectsReply: false } : {}),
+            ...(message.senderTaskId ? { senderTaskId: message.senderTaskId } : {}),
+            ...(message.taskId ? { recipientTaskId: message.taskId } : {}),
             deliveries: deliveries.map((item) => {
               const delivery = this.#publicDelivery(item, positions, message);
               return {
@@ -1582,6 +1591,60 @@ export class MailboxStore {
       }
     }
     return messages;
+  }
+
+  /**
+   * The messages between two agents, oldest first: each message that one of them sent to the other,
+   * at most `AGENT_EXCHANGE_MESSAGE_LIMIT`. A message to several agents shows once, with the delivery
+   * to the other agent of the pair. `deletedRowIds` are the rows that a person deleted from the own
+   * chat of `agentId`; their messages stay out. A brief that an agent sent to its own side thread is
+   * not an exchange.
+   */
+  agentExchange(agentId: string, peerAgentId: string, deletedRowIds: ReadonlySet<string>): AgentExchange {
+    const deliveriesByMessage = new Map<string, StoredDelivery[]>();
+    for (const delivery of this.#state.deliveries) {
+      if (delivery.recipientAgentId !== agentId && delivery.recipientAgentId !== peerAgentId) continue;
+      const deliveries = deliveriesByMessage.get(delivery.messageId) ?? [];
+      deliveries.push(delivery);
+      deliveriesByMessage.set(delivery.messageId, deliveries);
+    }
+    const messages: AgentExchangeMessage[] = [];
+    let truncated = false;
+    for (let index = this.#state.messages.length - 1; index >= 0; index -= 1) {
+      const message = this.#state.messages[index];
+      if (!message || message.channelId || message.messaging || message.sender.kind !== "agent") continue;
+      const senderAgentId = message.sender.agentId;
+      if (senderAgentId !== agentId && senderAgentId !== peerAgentId) continue;
+      const recipientAgentId = senderAgentId === agentId ? peerAgentId : agentId;
+      const delivery = deliveriesByMessage
+        .get(message.id)
+        ?.find((candidate) => candidate.recipientAgentId === recipientAgentId);
+      if (!delivery) continue;
+      // The rows of the message in the own chats of the two agents, as `conversationMessages` writes them.
+      const senderRowId = message.messagingReturn ? null : agentOutboxRowId(message.id);
+      const recipientRowId = message.taskId ? null : delivery.id;
+      const ownRowId = senderAgentId === agentId ? senderRowId : recipientRowId;
+      if (ownRowId && deletedRowIds.has(ownRowId)) continue;
+      if (messages.length >= AGENT_EXCHANGE_MESSAGE_LIMIT) {
+        truncated = true;
+        break;
+      }
+      messages.push({
+        messageId: message.id,
+        senderAgentId,
+        recipientAgentId,
+        text: message.text.slice(0, AGENT_EXCHANGE_TEXT_LIMIT),
+        textTruncated: message.text.length > AGENT_EXCHANGE_TEXT_LIMIT,
+        createdAt: message.createdAt,
+        replyToMessageId: message.replyToMessageId,
+        expectsReply: message.expectsReply !== false,
+        status: this.#publicDelivery(delivery, undefined, message).status,
+        senderRowId,
+        recipientRowId,
+      });
+    }
+    messages.reverse();
+    return { agentId, peerAgentId, messages, truncated };
   }
 
   reactionFor(

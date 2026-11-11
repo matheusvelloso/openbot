@@ -58,6 +58,7 @@ import {
   workspaceAgentOfPath,
 } from "./quoted-text";
 import { createActivityStore } from "./stores/activity-store";
+import { createAgentExchangeStore } from "./stores/agent-exchange-store";
 import { createBrowserStore } from "./stores/browser-store";
 import { createComposerActions } from "./stores/composer-actions";
 import { conversationOwnerId, createComposerStore, currentConversationTarget } from "./stores/composer-store";
@@ -305,6 +306,8 @@ export function createConversationViewScope(props: ConversationProps) {
     filesOpen,
     panelSubagentId,
     openSubagentPanel,
+    panelExchangePeerId,
+    openExchangePanel,
     panelThreadId,
     openPanelThread,
     sidePanel,
@@ -341,6 +344,19 @@ export function createConversationViewScope(props: ConversationProps) {
     revealSidebarFile,
     clearSidebarFilePreview,
   } = panels;
+  const { agentExchangeAvailable, agentExchangeState, reloadAgentExchange } = createAgentExchangeStore({
+    props,
+    peerAgentId: panelExchangePeerId,
+    shown: () => activeRightPanel() === "exchange",
+  });
+  /** A link to an agent message opens the agent's chat at that message when the host has the rows for it. */
+  const openAgentMessage = (agentId: string, rowId: string) => props.onOpenAgentMessage?.(agentId, rowId);
+  const agentMessageLinks = () => agentExchangeAvailable() && Boolean(props.onOpenAgentMessage);
+  /** A click on the button of an agent message shows all messages with that agent; a second click hides them. */
+  function toggleExchangePanel(peerAgentId: string) {
+    if (activeRightPanel() === "exchange" && panelExchangePeerId() === peerAgentId) closeSidePanelPane("exchange");
+    else openExchangePanel(peerAgentId);
+  }
   const sideQuestions = createSideQuestionStore({
     props,
     questions: sideQuestionStates,
@@ -2579,6 +2595,13 @@ export function createConversationViewScope(props: ConversationProps) {
     activeRightPanel,
     panelSubagentId,
     shownSubagentId,
+    panelExchangePeerId,
+    agentExchangeAvailable,
+    agentExchangeState,
+    reloadAgentExchange,
+    toggleExchangePanel,
+    openAgentMessage,
+    agentMessageLinks,
     shownPanelThreadId,
     openPanelThread,
     closePanelThread,

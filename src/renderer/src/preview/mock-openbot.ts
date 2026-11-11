@@ -1,6 +1,8 @@
 import { AGENT_MEMORY_CONTEXT_BUDGET_BYTES, essentialMemoryBytes } from "@openbot/contracts/agent-memory-context";
 import type {
   AcpRegistryEntry,
+  AgentExchange,
+  AgentExchangeMessage,
   AgentProviderRef,
   AgentSessionSettings,
   CreateAgentInput,
@@ -3134,6 +3136,79 @@ export function createMockOpenBot(options: MockOpenBotOptions = {}): MockOpenBot
         });
       },
       listQueue: async (agentId) => clone(queues.get(agentId) ?? emptyQueue(agentId)),
+      // As the host: each message between the two agents once, oldest first, from the chats and the
+      // queues of both agents. A row id is the row of the message in that agent's own chat.
+      readAgentExchange: async (input): Promise<AgentExchange> => {
+        const pairs = [
+          [input.agentId, input.peerAgentId],
+          [input.peerAgentId, input.agentId],
+        ] as const;
+        const outboxRow = (agentId: string, messageId: string) =>
+          getSnapshot(agentId).messages.find(
+            (message) => message.exchange?.direction === "outgoing" && message.exchange.messageId === messageId,
+          )?.id ?? null;
+        const entries = new Map<string, AgentExchangeMessage>();
+        for (const [owner, other] of pairs) {
+          for (const message of getSnapshot(owner).messages) {
+            const exchange = message.exchange;
+            if (exchange?.direction !== "incoming" || exchange.senderAgentId !== other) continue;
+            entries.set(exchange.messageId, {
+              messageId: exchange.messageId,
+              senderAgentId: other,
+              recipientAgentId: owner,
+              text: message.text,
+              textTruncated: false,
+              createdAt: message.createdAt,
+              replyToMessageId: exchange.replyToMessageId,
+              expectsReply: exchange.expectsReply !== false,
+              status: message.delivery?.status ?? "completed",
+              senderRowId: outboxRow(other, exchange.messageId),
+              recipientRowId: message.id,
+            });
+          }
+          for (const delivery of queues.get(owner)?.deliveries ?? []) {
+            if (delivery.sender.kind !== "agent" || delivery.sender.agentId !== other) continue;
+            if (entries.has(delivery.messageId)) continue;
+            entries.set(delivery.messageId, {
+              messageId: delivery.messageId,
+              senderAgentId: other,
+              recipientAgentId: owner,
+              text: delivery.text,
+              textTruncated: false,
+              createdAt: delivery.createdAt,
+              replyToMessageId: delivery.replyToMessageId,
+              expectsReply: delivery.expectsReply !== false,
+              status: delivery.status,
+              senderRowId: outboxRow(other, delivery.messageId),
+              recipientRowId: delivery.id,
+            });
+          }
+        }
+        // A message whose recipient chat the preview does not hold: only the sender's row is known.
+        for (const [owner, other] of pairs) {
+          for (const message of getSnapshot(owner).messages) {
+            const exchange = message.exchange;
+            if (exchange?.direction !== "outgoing" || entries.has(exchange.messageId)) continue;
+            const delivery = exchange.deliveries.find((item) => item.recipientAgentId === other);
+            if (!delivery) continue;
+            entries.set(exchange.messageId, {
+              messageId: exchange.messageId,
+              senderAgentId: owner,
+              recipientAgentId: other,
+              text: message.text,
+              textTruncated: false,
+              createdAt: message.createdAt,
+              replyToMessageId: exchange.replyToMessageId,
+              expectsReply: exchange.expectsReply !== false,
+              status: delivery.status,
+              senderRowId: message.id,
+              recipientRowId: delivery.id,
+            });
+          }
+        }
+        const messages = [...entries.values()].sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+        return { agentId: input.agentId, peerAgentId: input.peerAgentId, messages: clone(messages), truncated: false };
+      },
       listWaits: async (agentId) => ({ agentId, waits: [] }),
       cancelWait: async () => undefined,
       listTasks: async (agentId) => taskList(agentId),

@@ -118,6 +118,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "سؤال جانبي",
   "conversation.sidePanel.pane.voice": "الصوت",
   "conversation.sidePanel.pane.subagent": "وكيل فرعي",
+  "conversation.sidePanel.pane.exchange": "رسائل الوكلاء",
   "conversation.sideQuestion.emptyTitle": "اسأل عن هذه الدردشة",
   "conversation.sideQuestion.emptyBody": "يقرأ {name} هذه الدردشة للإجابة. لا يعود أي شيء هنا إليها.",
   "conversation.sideQuestion.messages": "رسائل السؤال الجانبي",

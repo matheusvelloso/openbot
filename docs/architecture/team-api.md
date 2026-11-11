@@ -393,6 +393,17 @@ The host cuts each request text to 2,000 characters. A wait that is already clos
 host's sentence. The host sends no event when a wait changes, so a client reads the list again after a
 cancel and when a turn of the agent starts or ends.
 
+The optional `agent-exchange-v1` capability (protocol 9 only) adds `POST /v1/agent-exchange`
+(`agentId`, `peerAgentId`). It lists the messages between two agents for the exchange pane of a chat:
+the newest 100, oldest first, each with at most 20,000 characters of text, the delivery state to the
+other agent, and the row ids of the message in the own chats of the two agents (`senderRowId`,
+`recipientRowId`, null when that chat does not show it). `src/main/team-api/route-agent-exchange.ts`
+owns the authorization: both agents visible (else 404), and `view` on `agentId`, because each of these
+messages is already in a chat of that agent. A host with the capability also writes the outbox row of a
+message that an agent sent from a side thread in the agent's own chat, so a client may link the sender
+of an incoming message to `outbox-<messageId>`. A client hides the exchange button and keeps the old
+agent links on a host without it.
+
 The optional `agent-queue-task-v1` capability (protocol 9 only) adds
 `POST /v1/agent-tasks/from-queued-message` (`agentId`, `deliveryId`, no other keys). It is "Run as a
 new thread" on a message that waits in the queue of the agent's own chat. The host advertises it only

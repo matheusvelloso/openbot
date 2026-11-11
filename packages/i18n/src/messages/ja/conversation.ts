@@ -112,6 +112,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "サイド質問",
   "conversation.sidePanel.pane.voice": "音声",
   "conversation.sidePanel.pane.subagent": "サブエージェント",
+  "conversation.sidePanel.pane.exchange": "エージェント間のメッセージ",
   "conversation.sideQuestion.emptyTitle": "このチャットについて質問",
   "conversation.sideQuestion.emptyBody":
     "{name} はこのチャットを読んで回答します。ここでのやり取りはチャットに追加されません。",

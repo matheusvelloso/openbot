@@ -142,6 +142,7 @@ export const messages = {
   "error.team.hostedSitesUnregistered": "השרת הזה אינו רשום ב-OpenBot, ולכן אין לו אתרים.",
   "error.team.hostedSiteNotFound": "האתר לא נמצא.",
   "error.team.markUnreadUnsupported": "הלקוח הזה אינו תומך בסימון שיחות כלא נקראו.",
+  "error.team.agentExchangeUnsupported": "לקוח זה לא יכול להציג את ההודעות בין שני סוכנים.",
   "error.team.inviteServiceUnavailable": "שירות ההזמנות אינו זמין.",
   "error.team.logoNotFound": "לוגו השרת לא נמצא.",
   "error.team.updateRequired": "נדרש עדכון.",

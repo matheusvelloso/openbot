@@ -228,6 +228,10 @@ export function ConversationTimeline() {
     setVirtualRootElement,
     shownSubagentId,
     toggleSubagentPanel,
+    agentExchangeAvailable,
+    toggleExchangePanel,
+    openAgentMessage,
+    agentMessageLinks,
     sideThreadOpen,
   } = useConversationViewScope();
   const { t, format, sourceText } = useText();
@@ -1113,6 +1117,12 @@ export function ConversationTimeline() {
                                                         onToggleRoutineRun={toggleRoutineRun}
                                                         onToggleAgentMessage={toggleAgentMessage}
                                                         agentMessageText={agentMessageText}
+                                                        onOpenAgentMessage={
+                                                          agentMessageLinks() ? openAgentMessage : undefined
+                                                        }
+                                                        onOpenAgentExchange={
+                                                          agentExchangeAvailable() ? toggleExchangePanel : undefined
+                                                        }
                                                         instructions={instructionsCalls()}
                                                         onOpenInstructions={
                                                           channel || !instructionsCalls()

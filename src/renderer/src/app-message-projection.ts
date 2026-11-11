@@ -4,6 +4,7 @@ import type { ClientAgentSummary, ConversationMessage, QueueDeliveryStatus } fro
 import {
   AGENT_INSTRUCTIONS_CHANGE_ITEM_TYPE,
   AGENT_WELCOME_ITEM_TYPE,
+  agentOutboxRowId,
   CONVERSATION_MEMORY_CHANGES_ITEM_TYPE,
   CONVERSATION_PLAN_ITEM_TYPE,
   CONVERSATION_SUBAGENTS_ITEM_TYPE,
@@ -339,6 +340,7 @@ function chatActionMarker(
     const targetDeliveries = message.exchange.deliveries.map((delivery) => ({
       agentId: delivery.recipientAgentId,
       status: delivery.status,
+      rowId: delivery.id,
     }));
     const status =
       message.exchange.direction === "incoming"
@@ -355,6 +357,10 @@ function chatActionMarker(
       replyToMessageId: message.exchange.replyToMessageId,
       expectsReply: message.exchange.expectsReply !== false,
       ...(message.exchange.senderTaskId === undefined ? {} : { senderTaskId: message.exchange.senderTaskId }),
+      ...(message.exchange.recipientTaskId === undefined ? {} : { recipientTaskId: message.exchange.recipientTaskId }),
+      ...(message.exchange.direction === "incoming"
+        ? { sourceRowId: agentOutboxRowId(message.exchange.messageId) }
+        : {}),
     };
   }
   if (isContextResetMarker(message)) return { kind: "context-reset", timestamp: message.createdAt };

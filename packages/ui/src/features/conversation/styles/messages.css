@@ -875,6 +875,12 @@
   color: var(--openbot-text-muted);
 }
 
+/* The button that shows all messages between the two agents in the side panel. */
+.ui-button.chat-action-exchange-button {
+  flex: 0 0 auto;
+  color: var(--openbot-text-muted);
+}
+
 /* The link to the routine's own thread, where the run's answer and work are. */
 .ui-button.chat-action-routine-thread {
   flex: 0 0 auto;

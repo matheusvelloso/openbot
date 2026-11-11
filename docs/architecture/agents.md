@@ -750,6 +750,19 @@ When the last copy ends, the waiting answers start in one turn, and the prompt n
 whose copy ended with no answer. A message from the person does not wait: it starts at once and
 takes the answers that are already in. Each end of a copy schedules a drain for the requester.
 
+Each chat shows the messages between its agent and other agents as marker rows: "Messaged" in the
+sender's own chat (the outbox row, `outbox-<messageId>`) and "Message from" in the recipient's chat
+(the delivery row). A message that the agent sent from a side thread also gets the outbox row in its own
+chat; a message from a Slack or Discord thread does not. The agent link of a row opens the other
+agent's own chat at the row of the same message (`navigation.selectAgentMessage`), or the side thread
+where the message ran (`AgentExchangeSummary.recipientTaskId`). The button beside the row opens the
+exchange pane of the side panel. It reads `MailboxStore.agentExchange` through `agent:read-exchange`,
+or `agent-exchange-v1` on a joined server or the web client, and reads it again when an agent message
+of the chat arrives or changes state (`stores/agent-exchange-store.ts`).
+`bun scripts/agent-exchange-pane-e2e.ts --storybook=<url>` checks the button, the pane and both links
+in the `App/Playground` story and writes `.openbot-build/agent-exchange-pane-e2e/report.json`;
+`bun run test:team-api-routes` checks the host route.
+
 A message from another agent follows the recipient's busy-message mode, as a message from the
 person does. When the mode is "steer", the provider steers natively and the recipient runs a chat
 turn, `send_message` and the result relay take the message into that turn

@@ -138,6 +138,7 @@ import { createBillingStore } from "@openbot/ui/features/billing/billing-store";
 import { LicenseSection } from "@openbot/ui/features/billing/LicenseSection";
 import { createLicenseStore } from "@openbot/ui/features/billing/license-store";
 import { unloadedHistory } from "@openbot/ui/features/conversation/ChatScrollRail";
+import { MAIN_THREAD_ID } from "@openbot/ui/features/conversation/threads/thread-types";
 import type { DiagramModelChoice } from "@openbot/ui/features/diagrams/DiagramNewAgentCard";
 import { LeaveServerDialog } from "@openbot/ui/features/servers/LeaveServerDialog";
 import { RestartServerDialog } from "@openbot/ui/features/servers/RestartServerDialog";
@@ -3637,6 +3638,11 @@ function WebWorkspaceFrame(props: WebWorkspaceProps) {
                   onSelectAgent={(id) => {
                     setMobilePane("conversation");
                     void select(id);
+                  }}
+                  onOpenAgentMessage={(agentId, messageId) => {
+                    // The message is in the agent's own chat, so that tab opens, not the side thread it showed last.
+                    agentThreads()?.tabs.open(agentId, MAIN_THREAD_ID);
+                    void openMessage(agentId, messageId);
                   }}
                   agentWaits={agentWaits()}
                   onUpdateAgent={async (agentId, updates) => {

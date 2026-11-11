@@ -273,6 +273,7 @@ import {
   routeAgentTaskLimit,
 } from "./team-api/route-agent-admin";
 import { agentColorsOf, routeAgentColors, visibleAgentColors } from "./team-api/route-agent-colors";
+import { routeAgentExchange } from "./team-api/route-agent-exchange";
 import { routeAgentFolders } from "./team-api/route-agent-folders";
 import { routeAgentHidden, visibleSnapshot } from "./team-api/route-agent-hidden";
 import { routeAgentImport } from "./team-api/route-agent-import";
@@ -1233,6 +1234,7 @@ export class TeamApiServer {
         return;
       if ((await routeChatHistory(context, this.#options.agents, this.#options.channels, hidden)) === "handled") return;
       if ((await routeConversationUnreadFrom(context, this.#options.agents, hidden)) === "handled") return;
+      if ((await routeAgentExchange(context, this.#options.agents, hidden)) === "handled") return;
       if ((await routeAgentMemoryPage(context, this.#options.agents, hidden)) === "handled") return;
       if ((await routeWorkspaceDirectory(context, this.#options.agents, hidden)) === "handled") return;
       if ((await routeConversationFiles(context, this.#options.agents)) === "handled") return;

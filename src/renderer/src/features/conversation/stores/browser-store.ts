@@ -398,6 +398,37 @@ export function createBrowserStore(deps: BrowserStoreDeps) {
 
   const agentsByThreadId = createMemo(() => new Map(deps.props.agents.map((agent) => [agent.threadId, agent])));
 
+  /*
+   * The agent's browser runs on the computer that runs OpenBot, so the user sees it only in this
+   * chat. When the agent starts to use a page, the Browser pane opens beside the chat, once for each
+   * turn: a pane that the user closed stays closed until the next turn uses the browser. A session
+   * that only lists tabs or closes one opens nothing. A channel has no agent of its own, and the
+   * full view or picture in picture already shows the page.
+   */
+  const shownControlSessionIds = new Set<string>();
+  const agentBrowserSession = createMemo(() => {
+    const agent = deps.props.agent;
+    if (!agent || deps.props.channel || !browserInteractionAvailable()) return undefined;
+    const tabIds = new Set(browserTabs().map((tab) => tab.id));
+    if (tabIds.size === 0) return undefined;
+    const threadIds = new Set([agent.threadId, ...(deps.props.threads?.tasks ?? []).map((task) => task.threadId)]);
+    return deps.props.browserControlState.sessions.find(
+      (session) =>
+        session.action !== "list-tabs" &&
+        session.action !== "close-tab" &&
+        !shownControlSessionIds.has(session.id) &&
+        (session.tabId ? tabIds.has(session.tabId) : threadIds.has(session.threadId)),
+    );
+  });
+  createEffect(agentBrowserSession, (session) => {
+    if (!session) return;
+    shownControlSessionIds.add(session.id);
+    // Untracked: opening the pane writes the panel mode, which must not run this effect again.
+    const mode = untrack(deps.panels.activeRightPanel);
+    if (mode === "browser" || mode === "browser-expanded" || mode === "browser-pip") return;
+    untrack(() => deps.panels.setActiveRightPanel("browser"));
+  });
+
   // Single pass, no copy and no localeCompare sort per evaluation.
   const newestSession = (sessions: readonly BrowserControlSession[]) => {
     let acting: BrowserControlSession | undefined;

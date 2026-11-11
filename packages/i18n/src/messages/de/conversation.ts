@@ -116,6 +116,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "Nebenfrage",
   "conversation.sidePanel.pane.voice": "Sprache",
   "conversation.sidePanel.pane.subagent": "Subagent",
+  "conversation.sidePanel.pane.exchange": "Agentennachrichten",
   "conversation.sideQuestion.emptyTitle": "Frage zu diesem Chat",
   "conversation.sideQuestion.emptyBody":
     "{name} liest diesen Chat, um zu antworten. Nichts von hier gelangt in den Chat.",

@@ -71,6 +71,7 @@ import type {
   SetAgentDockXWaylandInput,
 } from "./ipc-agent-dock";
 import type { AgentIpcRequest, ScopedAgentEvent } from "./ipc-agent-events";
+import type { AgentExchange, AgentExchangeInput } from "./ipc-agent-exchange";
 import type {
   AddAgentFolderInput,
   AgentExclusionChange,
@@ -1751,6 +1752,9 @@ export const IPC_ENDPOINTS = {
       "agent:delete-conversation-message",
     ),
     listQueue: scopedRequest<string, QueueSnapshot>()("agent:list-queue"),
+    // The messages between the agent and another agent, for the exchange pane. A joined server answers
+    // through `agent-exchange-v1`; the client hides the pane without it.
+    readAgentExchange: scopedRequest<AgentExchangeInput, AgentExchange>()("agent:read-exchange"),
     listWaits: scopedRequest<string, AgentWaitsSnapshot>()("agent:list-waits"),
     cancelWait: scopedRequest<CancelAgentWaitInput, void>()("agent:cancel-wait"),
     // A joined server takes these through `agent-tasks-v1`, except `runQueuedMessageAsTask`, which is local only.

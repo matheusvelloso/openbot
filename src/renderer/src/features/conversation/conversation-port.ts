@@ -22,6 +22,7 @@ export interface ConversationPort {
     | "markConversationRead"
     | "markConversationUnread"
     | "readConversationPage"
+    | "readAgentExchange"
     | "releaseFilePreview"
     | "searchConversationMessages"
     | "sendMessage"

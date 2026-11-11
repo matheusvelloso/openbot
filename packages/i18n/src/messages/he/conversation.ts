@@ -115,6 +115,7 @@ export const messages = {
   "conversation.sidePanel.pane.question": "שאלת צד",
   "conversation.sidePanel.pane.voice": "קול",
   "conversation.sidePanel.pane.subagent": "תת-סוכן",
+  "conversation.sidePanel.pane.exchange": "הודעות בין סוכנים",
   "conversation.sideQuestion.emptyTitle": "שאלה על הצ'אט הזה",
   "conversation.sideQuestion.emptyBody": "{name} קורא את הצ'אט הזה כדי לענות. שום דבר מכאן לא חוזר אליו.",
   "conversation.sideQuestion.messages": "הודעות שאלת צד",

@@ -201,7 +201,7 @@ export function WorkspaceConversation(props: { account: () => CentralAuthUser })
   // the provider's rate-limit endpoint for a card the user may never see.
   const auth = useAuth();
   const { teamPresence, currentTeamMember } = usePresence();
-  const { selectAgent, openAgentMessage, messageFocusRequest, globalSearchOpen } = useNavigation();
+  const { selectAgent, selectAgentMessage, openAgentMessage, messageFocusRequest, globalSearchOpen } = useNavigation();
   const channels = useChannels();
   const conversationController = useConversationController();
   /** The open channels, for "Send to channel" on a message. The text waits in the channel's composer. */
@@ -639,6 +639,7 @@ export function WorkspaceConversation(props: { account: () => CentralAuthUser })
         settingsRequest={settingsRequest()}
         messageFocusRequest={messageFocusRequest()}
         onSelectAgent={selectAgent}
+        onOpenAgentMessage={selectAgentMessage}
         agentWaits={agentWaits()}
         onUpdateAgent={updateConversationAgent}
         onSetAgentAvatar={setAgentAvatar}

@@ -75,15 +75,20 @@ export interface AgentMessageMarkerModel {
   kind: "agent-message";
   direction: "incoming" | "outgoing";
   sourceAgentId: string;
-  targetDeliveries: Array<{ agentId: string; status: QueueDeliveryStatus }>;
+  /** `rowId` is the row of the message in the recipient's own chat, where a link opens it. */
+  targetDeliveries: Array<{ agentId: string; status: QueueDeliveryStatus; rowId?: string }>;
   status: AgentDeliveryMarkerStatus;
   timestamp: string;
   messageId: string;
   replyToMessageId: string | null;
   /** The sender asked for no answer, so the marker names it as information rather than a request. */
   expectsReply: boolean;
-  /** The sender's side thread that sent an incoming message. The sender link opens it. */
+  /** The sender's side thread that sent an incoming message. */
   senderTaskId?: string;
+  /** The row of an incoming message in the sender's own chat, where the sender link opens it. */
+  sourceRowId?: string;
+  /** The recipient's side thread that an outgoing message runs in. The recipient link opens it. */
+  recipientTaskId?: string;
   /** Set when the chat has the text of the message: whether the text shows under the marker. */
   expanded?: boolean;
 }

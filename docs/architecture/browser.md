@@ -586,6 +586,18 @@ again, because a reload could send a form again or lose the work of the person.
 `bun run test:browser-steps` covers the crash, the settle wait and the bot check, and writes
 `.openbot-build/browser-steps-e2e/report.json`.
 
+### The Browser pane opens with the agent
+
+The agent's browser runs on the computer that runs OpenBot, in `WebContentsView` tabs of the app
+window, not in a remote machine. The user sees a tab only in a Browser pane. When a browser control
+session (one per thread and turn, `BrowserControlSessions`) of the open agent's own chat or of one of
+its side threads acts on a tab of that agent, the chat opens the Browser pane beside the chat
+(`createBrowserStore` in `stores/browser-store.ts`). It opens once for each session, so a pane that
+the user closed stays closed until the next turn uses the browser. A session that only lists tabs or
+closes one opens nothing, and the pane does not open over the full view or picture in picture. A
+channel has no agent of its own and opens nothing. A joined server sends the same sessions, so the
+desktop with a joined server and the web client open the same pane with the host's live view.
+
 ### Page dialogs
 
 A page `alert` or `confirm` that an agent action opens goes to that agent; every other dialog stays in

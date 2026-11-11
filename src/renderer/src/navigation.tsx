@@ -1,5 +1,6 @@
 import type { GlobalSearchPage } from "@openbot/ui/components/GlobalSearch";
 import type { AgentMessage } from "@openbot/ui/data";
+import { MAIN_THREAD_ID } from "@openbot/ui/features/conversation/threads/thread-types";
 import { currentText } from "@openbot/ui/text";
 import { createEffect, createSignal, onSettled, untrack } from "solid-js";
 import { desktopAnalytics } from "./analytics";
@@ -183,6 +184,16 @@ const Navigation = createSimpleContext({
       void openAgentMessage(agentId, messageId);
     }
 
+    /**
+     * Opens the own chat of an agent at one message, as a link to a message between two agents does.
+     * The chat opens at its own tab, not at the side thread that the agent showed last.
+     */
+    function selectAgentMessage(agentId: string, messageId: string): void {
+      // The other window reads the chat when it opens. This one does not mark its messages read.
+      if (!selectAgent(agentId, MAIN_THREAD_ID) && platform.chatWindow) return;
+      void openAgentMessage(agentId, messageId);
+    }
+
     async function openAgentMessage(agentId: string, messageId: string): Promise<void> {
       const serverId = activeServerId();
       await Promise.resolve();
@@ -301,6 +312,7 @@ const Navigation = createSimpleContext({
       selectAgent,
       selectDirectMember,
       openAgentMessage,
+      selectAgentMessage,
       messageFocusRequest,
       globalSearchOpen,
       setGlobalSearchVisibility,

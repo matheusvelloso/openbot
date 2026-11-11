@@ -144,6 +144,7 @@ export const messages = {
   "error.team.hostedSitesUnregistered": "هذا الخادم غير مسجّل في OpenBot، لذا لا مواقع له.",
   "error.team.hostedSiteNotFound": "لم يُعثر على الموقع.",
   "error.team.markUnreadUnsupported": "لا يدعم هذا العميل تعليم المحادثات كغير مقروءة.",
+  "error.team.agentExchangeUnsupported": "لا يمكن لهذا العميل عرض الرسائل بين وكيلين.",
   "error.team.inviteServiceUnavailable": "خدمة الدعوات غير متاحة.",
   "error.team.logoNotFound": "لم يُعثر على شعار الخادم.",
   "error.team.updateRequired": "يلزم التحديث.",

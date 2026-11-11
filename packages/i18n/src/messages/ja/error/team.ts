@@ -142,6 +142,7 @@ export const messages = {
   "error.team.hostedSitesUnregistered": "このサーバーは OpenBot に登録されていないため、サイトがありません。",
   "error.team.hostedSiteNotFound": "サイトが見つかりません。",
   "error.team.markUnreadUnsupported": "このクライアントは会話を未読にする操作に対応していません。",
+  "error.team.agentExchangeUnsupported": "このクライアントでは 2 つのエージェント間のメッセージを表示できません。",
   "error.team.inviteServiceUnavailable": "招待サービスを利用できません。",
   "error.team.logoNotFound": "サーバーのロゴが見つかりません。",
   "error.team.updateRequired": "更新が必要です。",

@@ -36,6 +36,7 @@ import type {
   UpdateStatus,
 } from "@openbot/contracts/ipc";
 import {
+  AGENT_EXCHANGE_ITEM_TYPE,
   CONVERSATION_PLAN_ITEM_TYPE,
   conversationPlanText,
   isAgentStatus,
@@ -424,10 +425,11 @@ export const STORY_CONVERSATION_MESSAGES: ConversationMessage[] = [
     reaction: "👍",
   },
   {
-    id: "message-exchange",
+    // The row id that the host writes for an agent's own message to other agents (`agentOutboxRowId`).
+    id: "outbox-message-exchange",
     author: "system",
     source: "system",
-    text: "",
+    text: "Please check the sources of the launch plan before I share it.",
     createdAt: "2026-08-19T09:44:00.000Z",
     status: "completed",
     exchange: {
@@ -488,8 +490,33 @@ export const STORY_QUEUES: Record<string, QueueDelivery[]> = {
   ],
 };
 
-/** A chat where several team members write to one agent. Each human message names its sender. */
+/**
+ * A chat where several team members write to one agent. Each human message names its sender. Chief's
+ * request to Research and Sales comes first, as the delivery row of Research.
+ */
 const STORY_TEAM_CONVERSATION_MESSAGES: ConversationMessage[] = [
+  {
+    id: "delivery-research",
+    author: "agent",
+    source: "agent",
+    text: "Please check the sources of the launch plan before I share it.",
+    senderAgentId: "chief",
+    createdAt: "2026-08-19T09:44:00.000Z",
+    status: "completed",
+    itemType: AGENT_EXCHANGE_ITEM_TYPE,
+    delivery: { id: "delivery-research", status: "completed", position: null },
+    exchange: {
+      direction: "incoming",
+      messageId: "message-exchange",
+      senderAgentId: "chief",
+      recipientAgentIds: ["research", "sales"],
+      replyToMessageId: null,
+      deliveries: [
+        { id: "delivery-research", recipientAgentId: "research", status: "completed", position: null, error: null },
+        { id: "delivery-sales", recipientAgentId: "sales", status: "running", position: 1, error: null },
+      ],
+    },
+  },
   {
     id: "team-message-self",
     author: "user",
