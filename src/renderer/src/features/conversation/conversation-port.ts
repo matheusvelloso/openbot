@@ -51,6 +51,8 @@ export interface ConversationPort {
   /** The reader's level for each agent of a joined server, which decides what Delete offers. */
   hostAdmin: Pick<OpenBotDesktopApi["hostAdmin"], "getAgentAccess">;
   browserDock: Pick<OpenBotDesktopApi["browserDock"], "publishPresentation" | "onAction" | "onShown">;
+  /** The Computer Use work of this computer's agents and a picture of its window, for the Screen pane. */
+  computerUse: Pick<OpenBotDesktopApi["computerUse"], "activity" | "onActivityChanged" | "capturePreview">;
 }
 
 /** Read on each call: tests and stories replace `window.openbot` per case. */

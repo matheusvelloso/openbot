@@ -1,6 +1,8 @@
 // The Computer Use driver's readiness, and the macOS permission panes it may need.
 
+import type { ComputerUseActivityState, ComputerUsePreview } from "@openbot/contracts/ipc";
 import { createOpenBotLogger, toLogValue } from "@openbot/logging";
+import { Effect } from "effect";
 import { runCauseEffect } from "../../backend/effect-boundary";
 import type { ComputerUsePermissionHelpWindowController } from "../computer-use-permission-help-window";
 import type { CuaDriverRuntime } from "../cua-driver-runtime";
@@ -14,6 +16,10 @@ const logger = createOpenBotLogger("computer-use");
 // assertion, and keeps the group from reaching further into either owner than it needs to.
 export interface ComputerUseIpcDependencies {
   cuaDriver: Pick<CuaDriverRuntime, "state">;
+  /** The Computer Use work of this computer's running turns. */
+  activity: () => ComputerUseActivityState;
+  /** A picture of the window that the driver works in now. */
+  preview: () => Effect.Effect<ComputerUsePreview | null>;
   openExternal: (url: string) => Promise<void>;
   permissionHelp: Pick<
     ComputerUsePermissionHelpWindowController,
@@ -22,7 +28,7 @@ export interface ComputerUseIpcDependencies {
 }
 
 /**
- * Six endpoints. Two of them answer with the whole state.
+ * Eight endpoints. Two of them answer with the whole state, and two serve the Screen pane of a chat.
  *
  * Opening a pane returns the state again rather than nothing, because the user grants the
  * permission in System Settings and comes back: re-reading on the way out is what lets the panel
@@ -37,6 +43,8 @@ export interface ComputerUseIpcDependencies {
  */
 export function computerUseIpcHandlers({
   cuaDriver,
+  activity,
+  preview,
   openExternal,
   permissionHelp,
 }: ComputerUseIpcDependencies): Pick<IpcGroupHandlers, "computerUse"> {
@@ -64,6 +72,10 @@ export function computerUseIpcHandlers({
       revealPermissionApp: eventHandler(async (event) => {
         permissionHelp.reveal(event.sender.id);
       }),
+      activity: handler(activity),
+      // The picture shows another app's window. Like every endpoint here, it answers only a window of
+      // the app: the trusted-URL gate refuses a page of the built-in browser.
+      capturePreview: handler(() => Effect.runPromise(preview())),
     },
   };
 }

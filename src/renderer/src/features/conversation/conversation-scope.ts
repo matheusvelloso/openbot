@@ -68,6 +68,7 @@ import { createPanelsStore } from "./stores/panels-store";
 import { PENDING_SEND_ID_PREFIX, type PendingSend, pendingSendMessage } from "./stores/pending-send-store";
 import { createQueueStore } from "./stores/queue-store";
 import { createReplyJumpStore } from "./stores/reply-jump-store";
+import { createScreenStore } from "./stores/screen-store";
 import { createScrollStore } from "./stores/scroll-store";
 import { createSearchStore } from "./stores/search-store";
 import { createSettingsStore, runtimeSettingsEqual } from "./stores/settings-store";
@@ -553,6 +554,11 @@ export function createConversationViewScope(props: ConversationProps) {
       : undefined;
     return endpoint?.name ?? providerDisplayName(agent.provider);
   };
+  const { screenAvailable, screenActivity, screenPreview } = createScreenStore({
+    props,
+    activeRightPanel,
+    setActiveRightPanel: (mode) => setActiveRightPanel(mode),
+  });
   const browser = createBrowserStore({
     props,
     browserOpenRequests: resources.browserOpenRequests,
@@ -2596,6 +2602,9 @@ export function createConversationViewScope(props: ConversationProps) {
     panelSubagentId,
     shownSubagentId,
     panelExchangePeerId,
+    screenAvailable,
+    screenActivity,
+    screenPreview,
     agentExchangeAvailable,
     agentExchangeState,
     reloadAgentExchange,

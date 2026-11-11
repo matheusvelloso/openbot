@@ -38,6 +38,7 @@ import type {
   ChannelRoutine,
   ChannelRoutineRun,
   CodexLiveVoice,
+  ComputerUseActivityState,
   ConversationFileSearchPage,
   ConversationMessage,
   ConversationMessageSender,
@@ -169,6 +170,7 @@ import { BootRecovery } from "./agent/boot-recovery";
 import { BrowserUploads } from "./agent/browser-uploads";
 import type { ChatVisualPreviewHost } from "./agent/chat-visual-preview";
 import { CodexIdleSessions } from "./agent/codex-idle-sessions";
+import { ComputerUseActivitySessions } from "./agent/computer-use-activity";
 import { ContextCompaction } from "./agent/context-compaction";
 import { ConversationReader } from "./agent/conversation-reader";
 import { ConversationRuntime } from "./agent/conversation-runtime";
@@ -325,6 +327,8 @@ interface AgentServiceEvents {
   event: [event: AgentEvent, memberId?: string];
   /** Finished tool steps for the local host's product analytics. Never forwarded to a client. */
   toolUsage: [usage: ToolUsageSignal];
+  /** The Computer Use work of the running turns, for this computer's windows. Never forwarded to a client. */
+  computerUse: [state: ComputerUseActivityState];
   /** A workflow run ended, for the local host's product analytics. Never forwarded to a client. */
   workflowRun: [end: WorkflowRunEnd];
   /**
@@ -546,6 +550,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #store: AgentStore;
   readonly #mailbox: MailboxStore;
   readonly #browser: AgentBrowserHost;
+  /** The Computer Use work of each running turn, for the Screen pane of this computer's chats. */
+  readonly #computerUse = new ComputerUseActivitySessions();
   readonly #reader: ConversationReader;
   readonly #memories: AgentMemories;
   readonly #instructionChanges = new InstructionsChanges();
@@ -1681,6 +1687,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#browser.onControlChanged((state) => {
       this.#emit({ type: "browser-control-changed", state });
     });
+    // Not an agent event: the Team API forwards those, and this work is in this computer's windows.
+    this.#computerUse.onChanged((state) => this.emit("computerUse", state));
     this.#queue = new QueueControls({
       store,
       mailbox,
@@ -1728,6 +1736,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         listAgents: () => this.listAgents(),
         redactMcp: (text) => this.#mcp.redact(text),
         emitToolUsage: (usage) => this.emit("toolUsage", usage),
+        computerUseStep: (step) => this.#computerUse.step(step),
+        computerUseTurnEnded: (threadId, turnId) => this.#computerUse.end(threadId, turnId),
         turnModel: (agentId, turnId) => this.#drain.modelForTurn(agentId, turnId),
         mayFailOver: (agentId) => this.#usageLimitBackup(agentId) !== undefined,
         mayContinueOnBackup: (agentId) => this.#mayContinueStoppedWork(agentId),
@@ -5147,6 +5157,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           (failure) => new AgentLifecycleFailed({ operation: "discardDraftAttachment", cause: failure.cause }),
         ),
       );
+  }
+
+  /** The Computer Use work of the running turns, for the Screen pane of this computer's chats. */
+  computerUseActivity(): ComputerUseActivityState {
+    return this.#computerUse.state();
   }
 
   listQueue(agentId: string): QueueSnapshot {

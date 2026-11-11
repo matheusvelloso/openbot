@@ -37,6 +37,8 @@ import {
   decodeClaudeUserSetupSetting,
   decodeCompanySignInScimToken,
   decodeCompanySignInSettings,
+  decodeComputerUseActivityState,
+  decodeComputerUsePreview,
   decodeHermesImportPreview,
   decodeHermesImportResult,
   decodeHostAgentMemoryLimit,
@@ -859,6 +861,9 @@ const openbotApi: OpenBotDesktopApi = {
     startPermissionAppDrag: decodeVoid,
     revealPermissionApp: decodeVoid,
     highlightPlacement: decodeComputerUseHighlightPlacement,
+    activity: decodeComputerUseActivityState,
+    activityChanged: decodeComputerUseActivityState,
+    capturePreview: decodeComputerUsePreview,
   }),
   macAutomation: bridgeGroup(IPC_ENDPOINTS.macAutomation, {
     request: decodeMacAutomationResults,

@@ -109,6 +109,42 @@ Every copy OpenBot starts gets `CUA_DRIVER_RS_TELEMETRY_ENABLED=0` and
 a user chose, and OpenBot pins the version, so a release check could only offer an update OpenBot
 would refuse.
 
+## Screen pane
+
+The Screen pane of a chat shows the agent's Computer Use work on this computer, beside the chat: a
+picture of the window that the driver works in, what the agent does now, Stop, and the steps of the
+turn.
+
+- **Who works.** The driver names no agent, so the backend records the work from the turn's own
+  tool items. `TurnLifecycle.#applyItem` finds a Computer Use item with `computerUseToolName`
+  (the same test as the progress text) and calls the `computerUseStep` hook; the end of the turn
+  calls `computerUseTurnEnded`. `ComputerUseActivitySessions` (`src/backend/agent/computer-use-activity.ts`)
+  keeps one session per thread and turn: `acting` while a driver call runs, `deciding` between calls,
+  and at most 30 steps. A step has only its action kind (`computerUseAction`, from the tool name),
+  its time and its result: no window title, typed text or picture.
+- **Local only.** `AgentService` sends the state as its `computerUse` service event, not as an agent
+  event, because the Team API forwards agent events. Main sends it to its own windows as
+  `computerUse.activityChanged`; `computerUse.activity` reads it. A joined server's agent works on
+  that server's display, which this computer cannot capture, and the web client has no window of its
+  own, so the pane shows on the local server of the desktop app only. A server needs a host route that
+  captures its agent display first.
+- **The picture.** `computerUse.capturePreview` takes the window of the highlight's last target
+  (`ComputerUseHighlightController.target`) with `ScreenCapturer.previewWindow`: a `desktopCapturer`
+  window source whose id is `window:<driver window id>:`, at most 1,280 px, as a JPEG. A window
+  capture draws the window also while another window covers it. The pane asks about once a second
+  while it shows and its agent has a session with at least one answered step: before that, the target
+  can still be the window that the driver touched last, in a turn before or in another app. A
+  picture from before the turn does not show during it. After the turn the pane keeps the last
+  picture, dimmed. The driver works in one window at a time, so two agents that use it at once show
+  the same window.
+- **Open and close.** When the open chat's agent starts a session, the pane opens once for that
+  turn, like the Browser pane. The launcher lists it while the agent works or after it took a picture.
+  Stop calls the chat's own Stop: Computer Use cannot be paused, because the provider calls the driver
+  itself.
+
+`bun scripts/screen-pane-e2e.ts --storybook=<url>` drives the `Conversation/Screen pane` story and
+writes `.openbot-build/screen-pane-e2e/report.json`.
+
 ## Remote desktop permission checks and live tests
 
 `RemoteScreenGateway` owns setup checks and live-test session ownership. The optional

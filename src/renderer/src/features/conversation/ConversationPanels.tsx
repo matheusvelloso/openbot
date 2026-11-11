@@ -7,6 +7,7 @@ import { classifyFailure } from "@openbot/telemetry";
 import { SETTINGS_PANEL_DEFAULT, SETTINGS_PANEL_MAX } from "@openbot/ui/components/SettingsPanel";
 import { BROWSER_NEW_TAB_URL } from "@openbot/ui/features/browser/browser-suggestions";
 import { AgentExchangePane } from "@openbot/ui/features/conversation/AgentExchangePane";
+import { ScreenPane } from "@openbot/ui/features/conversation/ScreenPane";
 import { SidePanelHeader, SidePanelLauncher, type SidePanelPane } from "@openbot/ui/features/conversation/SidePanel";
 import { SideQuestionPanel } from "@openbot/ui/features/conversation/SideQuestionPanel";
 import { SubagentPanel } from "@openbot/ui/features/conversation/Subagents";
@@ -206,6 +207,9 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
     voiceConversationAvailable,
     panelSubagentId,
     panelExchangePeerId,
+    screenAvailable,
+    screenActivity,
+    screenPreview,
     agentExchangeState,
     reloadAgentExchange,
     openAgentMessage,
@@ -394,6 +398,8 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
   const sidePanelPanes = createMemo((): SidePanelPane[] => [
     // A channel turn's takeover still shows as a card; the pane belongs to one agent's browser.
     ...(props.browserEnabled !== false && !channel ? (["browser"] as const) : []),
+    // Only while the agent uses an app on this computer, or after it did: the pane has nothing else to show.
+    ...(screenAvailable() ? (["screen"] as const) : []),
     ...(storageReachable() && props.agent?.threadId && serverHasStorage(props.server) ? (["files"] as const) : []),
     ...(props.agent || channel ? (["settings"] as const) : []),
     ...(props.agent && voiceConversationAvailable() ? (["voice"] as const) : []),
@@ -650,6 +656,15 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
       {/* Keyed, so each side thread gets its own messages and read state. */}
       <Show when={shownThread()} keyed>
         {(threadId) => <ConversationSideThread threadId={threadId} />}
+      </Show>
+
+      <Show when={activeRightPanel() === "screen"}>
+        <ScreenPane
+          agent={props.agent}
+          activity={screenActivity()}
+          preview={screenPreview()}
+          onStop={screenActivity() ? props.onStop : undefined}
+        />
       </Show>
 
       <Show when={activeRightPanel() === "exchange" && props.agent && panelExchangePeerId()}>

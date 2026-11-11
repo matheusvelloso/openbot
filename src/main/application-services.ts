@@ -88,6 +88,7 @@ import type {
   BrowserDisplayState,
   CapabilityState,
   CentralAuthState,
+  ComputerUsePreview,
   ComputerUseState,
   ProviderRuntimeSnapshot,
   SpeechModelStatus,
@@ -767,6 +768,8 @@ export interface ApplicationServices {
   agentDock: AgentDockWindowController;
   cuaDriver: CuaDriverRuntime;
   computerUseHighlight: ComputerUseHighlightController;
+  /** A picture of the window that the Computer Use driver works in now, for the Screen pane. */
+  computerUsePreview: () => Effect.Effect<ComputerUsePreview | null>;
   computerUsePermissionHelp: ComputerUsePermissionHelpWindowController;
   analytics: HostAnalytics;
   /** Starts the shared agent database host early. The entry point runs it after the first window loads. */
@@ -2044,6 +2047,30 @@ export async function createApplicationServices({
   );
   /** The plan storage of a hosted server, set after its sign-in. The agent instructions name it. */
   let hostedStorageGb: number | null = null;
+  // `desktopCapturer` captures the display OpenBot is on. With an agent display of its own, that
+  // is only the OpenBot window, so agents take their screenshots with the Computer Use driver.
+  const screenCapture = hasSeparateAgentDisplay(process.platform)
+    ? null
+    : new ScreenCapturer({
+        platform: process.platform,
+        screenAccess: () => systemPreferences.getMediaAccessStatus("screen"),
+        displays: () => screen.getAllDisplays(),
+        primaryDisplayId: () => screen.getPrimaryDisplay().id,
+        getSources: (options) => desktopCapturer.getSources(options),
+      });
+  /*
+   * The picture of the Screen pane: the window that the driver works in now. The driver does not say
+   * which agent drives it, so the pane shows it only while its own agent has a Computer Use session.
+   * A failed capture is no picture: the pane keeps its last one and asks again.
+   */
+  const computerUsePreview = (): Effect.Effect<ComputerUsePreview | null> => {
+    const target = computerUseHighlight.target;
+    if (!target || !screenCapture) return Effect.succeed(null);
+    return screenCapture.previewWindow(target.windowId).pipe(
+      Effect.map((image) => (image ? { ...image, title: target.title, capturedAt: new Date().toISOString() } : null)),
+      Effect.orElseSucceed(() => null),
+    );
+  };
   const service: AgentService = new AgentService({
     store,
     mailbox,
@@ -2093,17 +2120,7 @@ export async function createApplicationServices({
         ensureToolRuntimesReady: () => providerRuntimes.ensureToolRuntimesReady(),
         toolRuntimes: () => providerRuntimes.mcpToolRuntimes(),
       }),
-    // `desktopCapturer` captures the display OpenBot is on. With an agent display of its own, that
-    // is only the OpenBot window, so agents take their screenshots with the Computer Use driver.
-    screenCapture: hasSeparateAgentDisplay(process.platform)
-      ? null
-      : new ScreenCapturer({
-          platform: process.platform,
-          screenAccess: () => systemPreferences.getMediaAccessStatus("screen"),
-          displays: () => screen.getAllDisplays(),
-          primaryDisplayId: () => screen.getPrimaryDisplay().id,
-          getSources: (options) => desktopCapturer.getSources(options),
-        }),
+    screenCapture,
     hostMemory,
     hostedStorageGb: () => hostedStorageGb,
     agentCursorDrawn: drawsComputerUseHighlight,
@@ -4242,6 +4259,7 @@ export async function createApplicationServices({
     agentDock,
     cuaDriver,
     computerUseHighlight,
+    computerUsePreview,
     computerUsePermissionHelp,
     analytics,
     prewarmAgentDatabase: tables.prewarm(),

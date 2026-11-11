@@ -119,6 +119,7 @@
     "./features/conversation/ServerInstallCard": "./src/features/conversation/ServerInstallCard.tsx",
     "./features/conversation/ChatActionMarker": "./src/features/conversation/ChatActionMarker.tsx",
     "./features/conversation/SidePanel": "./src/features/conversation/SidePanel.tsx",
+    "./features/conversation/ScreenPane": "./src/features/conversation/ScreenPane.tsx",
     "./features/conversation/SideQuestionPanel": "./src/features/conversation/SideQuestionPanel.tsx",
     "./features/conversation/SpeakingBar": "./src/features/conversation/SpeakingBar.tsx",
     "./features/conversation/VoicePanel": "./src/features/conversation/VoicePanel.tsx",

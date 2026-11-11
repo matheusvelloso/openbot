@@ -10,6 +10,7 @@ import type {
   ResetAgentSessionSettingInput,
   SetAgentSessionSettingInput,
 } from "./ipc-agent-session-settings";
+import type { ComputerUseActivityState, ComputerUsePreview } from "./ipc-computer-use-activity";
 import type { ServerAuditLog } from "./ipc-server-audit";
 // The one channel list. Each endpoint holds its wire value, the group it belongs to, and whether it
 // is a request the renderer invokes or an event the main process sends. That is what lets a
@@ -1053,6 +1054,12 @@ export const IPC_ENDPOINTS = {
     startPermissionAppDrag: request<undefined, void>()("computer-use:start-permission-app-drag"),
     revealPermissionApp: request<undefined, void>()("computer-use:reveal-permission-app"),
     highlightPlacement: event<ComputerUseHighlightPlacement>()("computer-use:highlight-placement"),
+    // The Computer Use work of this computer's agents, for the Screen pane. Local only: a joined
+    // server's agents work on a display that this computer cannot capture.
+    activity: request<undefined, ComputerUseActivityState>()("computer-use:activity"),
+    activityChanged: event<ComputerUseActivityState>()("computer-use:activity-changed"),
+    /** A picture of the window that the driver works in now, or null when it works in none. */
+    capturePreview: request<undefined, ComputerUsePreview | null>()("computer-use:capture-preview"),
   },
   macAutomation: {
     /** Sends one harmless Apple Event to each app, so macOS shows its Automation prompts now. */

@@ -1,3 +1,4 @@
+import { COMPUTER_USE_PREVIEW_SIZE } from "@openbot/contracts/ipc";
 import { sourceText } from "@openbot/i18n/source";
 import { createOpenBotLogger, toLogValue } from "@openbot/logging";
 import { Effect } from "effect";
@@ -32,6 +33,16 @@ const MAX_LISTED_WINDOWS = 100;
  */
 const WINDOW_THUMBNAIL_SIZE = { width: 1920, height: 1920 };
 
+/** The box of a Screen pane picture. A window keeps its aspect ratio inside it. */
+const PREVIEW_BOX = { width: COMPUTER_USE_PREVIEW_SIZE, height: COMPUTER_USE_PREVIEW_SIZE };
+const PREVIEW_JPEG_QUALITY = 70;
+
+export interface ScreenCapturePreview {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
 /** The part of a `NativeImage` that a capture uses, so a test can pass a double. */
 export interface CaptureImage {
   isEmpty(): boolean;
@@ -39,6 +50,7 @@ export interface CaptureImage {
   crop(rectangle: ScreenCaptureRectangle): CaptureImage;
   resize(options: { width: number; height: number; quality: "good" }): CaptureImage;
   toPNG(): Uint8Array;
+  toJPEG(quality: number): Uint8Array;
 }
 
 /** The part of a `DesktopCapturerSource` that a capture uses. */
@@ -199,6 +211,30 @@ export class ScreenCapturer implements ScreenCaptureHost {
       }),
       name,
     );
+  });
+
+  /**
+   * A small picture of one window for the Screen pane, or null when no window has this id. The id is
+   * the driver's (a CGWindowID on macOS, an HWND on Windows), which is the number in Electron's
+   * `window:<id>:0` source id. A window capture draws the window also while another window covers it.
+   */
+  readonly previewWindow = Effect.fn("ScreenCapturer.previewWindow")(function* (
+    this: ScreenCapturer,
+    windowId: number,
+  ): Effect.fn.Return<ScreenCapturePreview | null, ScreenCaptureFailed> {
+    yield* this.#requirePermission();
+    const prefix = `window:${windowId}:`;
+    const source = (yield* this.#sources(["window"], PREVIEW_BOX)).find(({ id }) => id.startsWith(prefix));
+    if (!source) return null;
+    const image = yield* this.#nonEmpty(source.thumbnail);
+    return yield* Effect.try({
+      try: (): ScreenCapturePreview => {
+        const size = image.getSize();
+        const base64 = Buffer.from(image.toJPEG(PREVIEW_JPEG_QUALITY)).toString("base64");
+        return { dataUrl: `data:image/jpeg;base64,${base64}`, width: size.width, height: size.height };
+      },
+      catch: captureFailed("preview"),
+    });
   });
 
   /**
